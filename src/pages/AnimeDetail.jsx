@@ -12,10 +12,18 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AnimeDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
+  const { search } = window.location;
+  const urlParams = new URLSearchParams(search);
   const mal_id = urlParams.get('id');
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [epPage, setEpPage] = useState(1);
+
+  // Reset state when anime changes
+  useEffect(() => {
+    setShowFullDesc(false);
+    setEpPage(1);
+    window.scrollTo(0, 0);
+  }, [mal_id]);
 
   const { data: anime, isLoading } = useQuery({
     queryKey: ['anime-detail', mal_id],
