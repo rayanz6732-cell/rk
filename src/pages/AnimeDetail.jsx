@@ -227,30 +227,51 @@ export default function AnimeDetail() {
         {episodes?.data?.length > 0 && (
           <div className="mt-12">
             <h2 className="text-xl font-bold text-white mb-4">Episodes</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {episodes.data.map((ep) => (
-                <Link
-                  key={ep.mal_id}
-                  to={`/Watch?id=${mal_id}&ep=${ep.mal_id}&title=${encodeURIComponent(anime.title)}`}
-                  className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all flex items-start justify-between gap-2 group"
-                >
-                  <div>
-                    <p className="text-xs text-zinc-600 mb-1">Episode {ep.mal_id}</p>
-                    <p className="text-sm font-medium text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">{ep.title || `Episode ${ep.mal_id}`}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {ep.score > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                        <span className="text-xs text-zinc-500">{ep.score}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {episodes.data.map((ep) => {
+                const thumb = ep.images?.jpg?.image_url || anime.cover_image;
+                return (
+                  <Link
+                    key={ep.mal_id}
+                    to={`/Watch?id=${mal_id}&ep=${ep.mal_id}&title=${encodeURIComponent(anime.title)}`}
+                    className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative aspect-video">
+                      <img
+                        src={thumb}
+                        alt={`Episode ${ep.mal_id}`}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      {/* Dark overlay */}
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+                      {/* Play button on hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/90 flex items-center justify-center shadow-lg">
+                          <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                        </div>
                       </div>
-                    )}
-                    <div className="w-7 h-7 rounded-full bg-emerald-500/10 group-hover:bg-emerald-500 flex items-center justify-center transition-colors">
-                      <Play className="w-3 h-3 text-emerald-400 group-hover:text-black fill-emerald-400 group-hover:fill-black transition-colors" />
+                      {/* Episode number - bottom right */}
+                      <div className="absolute bottom-2 right-2 text-white font-black text-lg leading-none drop-shadow-lg">
+                        {ep.mal_id}
+                      </div>
+                      {/* Score - bottom left */}
+                      {ep.score > 0 && (
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+                          <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
+                          <span className="text-[10px] text-yellow-300 font-medium">{ep.score}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </Link>
-              ))}
+                    {/* Title below */}
+                    <div className="px-2 py-2">
+                      <p className="text-xs text-zinc-400 line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                        {ep.title || `Episode ${ep.mal_id}`}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
             {episodes.pagination?.has_next_page && (
               <Button variant="outline" onClick={() => setEpPage(p => p + 1)}
