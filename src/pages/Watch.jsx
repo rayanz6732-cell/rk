@@ -21,10 +21,10 @@ async function getAnilistId(malId) {
 }
 
 export default function Watch() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const mal_id = urlParams.get('id');
-  const ep = urlParams.get('ep') || '1';
-  const title = decodeURIComponent(urlParams.get('title') || 'Anime');
+  const [searchParams] = useSearchParams();
+  const mal_id = searchParams.get('id');
+  const ep = searchParams.get('ep') || '1';
+  const title = decodeURIComponent(searchParams.get('title') || 'Anime');
 
   const storageKey = `rk_progress_${mal_id}_ep${ep}`;
 
