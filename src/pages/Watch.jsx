@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, SkipForward, Mic, Captions, RefreshCw } from 'lucide-react';
+import { ArrowLeft, SkipForward, Mic, Captions, ChevronLeft, ChevronRight, Server } from 'lucide-react';
 
 const INTRO_DURATION = 90;
 
@@ -32,21 +32,8 @@ export default function Watch() {
   const [resumeTime, setResumeTime] = useState(0);
   const [anilistId, setAnilistId] = useState(null);
   const [sourceIndex, setSourceIndex] = useState(0);
-  const iframeRef = useRef(null);
 
-  // Sources - built lazily since some need anilistId
-  const getSources = (alId) => [
-    // Source 1: vidlink.pro — MAL ID directly, most reliable for anime
-    `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}`,
-    // Source 2: vidsrc.icu — needs AniList ID
-    alId ? `https://vidsrc.icu/embed/anime/${alId}/${ep}/${audioType === 'dub' ? 1 : 0}` : null,
-    // Source 3: 2embed.skin
-    `https://www.2embed.skin/embedanime/${mal_id}/${ep}`,
-    // Source 4: vidlink with dub fallback
-    `https://vidlink.pro/anime/${mal_id}/${ep}/sub`,
-  ].filter(Boolean);
-
-  // Fetch AniList ID in background for source 2
+  // Fetch AniList ID for sources that need it
   useEffect(() => {
     getAnilistId(mal_id).then(setAnilistId);
   }, [mal_id]);
@@ -60,7 +47,7 @@ export default function Watch() {
     }
   }, [storageKey]);
 
-  // Save progress via wall-clock time
+  // Save progress via wall-clock time every 15s
   const sessionStartRef = useRef(Date.now());
   useEffect(() => {
     sessionStartRef.current = Date.now();
@@ -77,15 +64,46 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  // Hide skip intro after intro window
+  // Hide skip intro after 2 min window
   useEffect(() => {
     if (!showSkipIntro) return;
-    const timer = setTimeout(() => setShowSkipIntro(false), (INTRO_DURATION + 30) * 1000);
+    const timer = setTimeout(() => setShowSkipIntro(false), 120000);
     return () => clearTimeout(timer);
   }, [showSkipIntro]);
 
-  const sources = getSources(anilistId);
-  const currentSrc = sources[sourceIndex] || sources[0];
+  const isDub = audioType === 'dub';
+  const dubVal = isDub ? 1 : 0;
+
+  // Build source list — null entries are filtered when anilistId not yet loaded
+  const allSources = [
+    {
+      name: 'VidLink',
+      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true&primaryColor=10b981`,
+    },
+    {
+      name: 'VidSrc ICU',
+      url: anilistId
+        ? `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/${dubVal}`
+        : null,
+    },
+    {
+      name: 'VidLink (JW)',
+      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true&player=jw`,
+    },
+    {
+      name: 'VidSrc ME',
+      url: anilistId
+        ? `https://vidsrc.me/embed/anime?id=${anilistId}&e=${ep}`
+        : null,
+    },
+    {
+      name: 'SmashyStream',
+      url: `https://embed.smashystream.xyz/playere.php?mal_id=${mal_id}&episode=${ep}&audio=${audioType}`,
+    },
+  ].filter(s => s.url !== null);
+
+  const clampedIndex = Math.min(sourceIndex, allSources.length - 1);
+  const currentSource = allSources[clampedIndex];
 
   const handleSkipIntro = () => {
     localStorage.setItem(storageKey, String(INTRO_DURATION));
@@ -93,14 +111,9 @@ export default function Watch() {
     setShowSkipIntro(false);
   };
 
-  const handleNextSource = () => {
-    const next = (sourceIndex + 1) % sources.length;
-    setSourceIndex(next);
-  };
-
   const handleAudioSwitch = (type) => {
     setAudioType(type);
-    setSourceIndex(0); // reset to best source when switching
+    setSourceIndex(0);
   };
 
   return (
@@ -142,9 +155,8 @@ export default function Watch() {
       {/* Video Player */}
       <div className="relative w-full bg-black flex-shrink-0" style={{ paddingTop: 'min(56.25%, 80vh)' }}>
         <iframe
-          ref={iframeRef}
-          key={`${mal_id}-${ep}-${audioType}-${sourceIndex}`}
-          src={currentSrc}
+          key={`${mal_id}-${ep}-${audioType}-${clampedIndex}`}
+          src={currentSource.url}
           className="absolute inset-0 w-full h-full"
           allowFullScreen
           allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
@@ -166,29 +178,43 @@ export default function Watch() {
         )}
       </div>
 
-      {/* Info + source switcher */}
-      <div className="px-4 md:px-8 py-4 border-t border-zinc-900 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-white font-semibold">{title}</p>
-          <p className="text-zinc-500 text-sm mt-0.5">
-            Episode {ep}
-            {resumeTime > 10 && (
-              <span className="ml-3 text-emerald-500/70 text-xs">
-                ● Resumed from {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
-              </span>
-            )}
-          </p>
-        </div>
+      {/* Info + server switcher */}
+      <div className="px-4 md:px-8 py-4 border-t border-zinc-900">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-white font-semibold">{title}</p>
+            <p className="text-zinc-500 text-sm mt-0.5">
+              Episode {ep}
+              {resumeTime > 10 && (
+                <span className="ml-3 text-emerald-500/70 text-xs">
+                  ● Resumed from {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
+                </span>
+              )}
+            </p>
+          </div>
 
-        {/* Try different server button */}
-        <button
-          onClick={handleNextSource}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white text-sm rounded-lg transition-all"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Try different server
-          <span className="text-zinc-700 text-xs">({sourceIndex + 1}/{sources.length})</span>
-        </button>
+          {/* Server selector */}
+          <div className="flex flex-col gap-2">
+            <p className="text-zinc-600 text-xs flex items-center gap-1.5">
+              <Server className="w-3 h-3" /> Select Server
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {allSources.map((source, idx) => (
+                <button
+                  key={source.name}
+                  onClick={() => setSourceIndex(idx)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    clampedIndex === idx
+                      ? 'bg-emerald-500 border-emerald-500 text-black'
+                      : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white'
+                  }`}
+                >
+                  {source.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
