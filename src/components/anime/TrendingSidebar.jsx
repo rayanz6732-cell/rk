@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, Captions, Mic } from 'lucide-react';
+import { Flame, Star } from 'lucide-react';
 
 export default function TrendingSidebar({ trending }) {
   if (!trending?.length) return null;
@@ -18,7 +18,7 @@ export default function TrendingSidebar({ trending }) {
         {trending.map((anime, index) => (
           <Link
             key={anime.id}
-            to={`/AnimeDetail?id=${anime.id}`}
+            to={`/AnimeDetail?id=${anime.mal_id || anime.id}`}
             className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-800/60 transition-colors group"
           >
             <span className={`text-2xl font-black w-8 text-center ${
@@ -36,14 +36,9 @@ export default function TrendingSidebar({ trending }) {
                 {anime.title}
               </h4>
               <div className="flex items-center gap-2 mt-1">
-                {anime.sub_episodes > 0 && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-violet-400">
-                    <Captions className="w-3 h-3" /> {anime.sub_episodes}
-                  </span>
-                )}
-                {anime.dub_episodes > 0 && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-blue-400">
-                    <Mic className="w-3 h-3" /> {anime.dub_episodes}
+                {anime.score > 0 && (
+                  <span className="flex items-center gap-0.5 text-[10px] text-yellow-500">
+                    <Star className="w-3 h-3 fill-yellow-500" /> {anime.score}
                   </span>
                 )}
                 {anime.type && (

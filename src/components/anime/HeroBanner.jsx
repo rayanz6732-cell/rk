@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Info, ChevronLeft, ChevronRight, Captions, Mic } from 'lucide-react';
+import { Play, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,12 +19,13 @@ export default function HeroBanner({ featured }) {
   if (!featured.length) return null;
 
   const anime = featured[current];
+  const animeId = anime?.mal_id || anime?.id;
 
   return (
     <div className="relative w-full h-[70vh] min-h-[480px] max-h-[700px] overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
-          key={anime.id}
+          key={animeId}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -100,26 +101,22 @@ export default function HeroBanner({ featured }) {
               {/* Info row */}
               <div className="flex items-center gap-4 mb-6 text-sm text-zinc-500">
                 {anime.release_year && <span>{anime.release_year}</span>}
-                {anime.sub_episodes > 0 && (
-                  <span className="flex items-center gap-1 text-violet-400">
-                    <Captions className="w-3.5 h-3.5" /> CC {anime.sub_episodes}
-                  </span>
+                {anime.episodes > 0 && (
+                  <span className="text-zinc-400">{anime.episodes} episodes</span>
                 )}
-                {anime.dub_episodes > 0 && (
-                  <span className="flex items-center gap-1 text-blue-400">
-                    <Mic className="w-3.5 h-3.5" /> {anime.dub_episodes}
-                  </span>
+                {anime.broadcast && (
+                  <span className="text-zinc-500 text-xs">{anime.broadcast}</span>
                 )}
               </div>
 
               {/* Buttons */}
               <div className="flex items-center gap-3">
-                <Link to={`/AnimeDetail?id=${anime.id}`}>
+                <Link to={`/AnimeDetail?id=${animeId}`}>
                   <Button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-6 py-5 rounded-xl gap-2 shadow-lg shadow-emerald-500/20">
                     <Play className="w-4 h-4 fill-black" /> WATCH NOW
                   </Button>
                 </Link>
-                <Link to={`/AnimeDetail?id=${anime.id}`}>
+                <Link to={`/AnimeDetail?id=${animeId}`}>
                   <Button variant="outline" className="border-zinc-700 bg-white/5 hover:bg-white/10 text-zinc-300 px-6 py-5 rounded-xl gap-2 backdrop-blur-sm">
                     <Info className="w-4 h-4" /> Details
                   </Button>
