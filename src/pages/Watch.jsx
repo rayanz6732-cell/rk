@@ -1,24 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, SkipForward, Mic, Captions, Loader2 } from 'lucide-react';
+import { ArrowLeft, SkipForward, Mic, Captions, RefreshCw } from 'lucide-react';
 
 const INTRO_DURATION = 90;
 
 async function getAnilistId(malId) {
-  const query = `
-    query ($idMal: Int) {
-      Media(idMal: $idMal, type: ANIME) {
-        id
-      }
-    }
-  `;
-  const res = await fetch('https://graphql.anilist.co', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ query, variables: { idMal: parseInt(malId) } }),
-  });
-  const data = await res.json();
-  return data?.data?.Media?.id;
+  try {
+    const query = `query ($idMal: Int) { Media(idMal: $idMal, type: ANIME) { id } }`;
+    const res = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { idMal: parseInt(malId) } }),
+    });
+    const data = await res.json();
+    return data?.data?.Media?.id || null;
+  } catch {
+    return null;
+  }
 }
 
 export default function Watch() {
@@ -33,24 +31,24 @@ export default function Watch() {
   const [showSkipIntro, setShowSkipIntro] = useState(true);
   const [resumeTime, setResumeTime] = useState(0);
   const [anilistId, setAnilistId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [sourceIndex, setSourceIndex] = useState(0);
   const iframeRef = useRef(null);
 
-  // Fetch AniList ID from MAL ID
+  // Sources - built lazily since some need anilistId
+  const getSources = (alId) => [
+    // Source 1: vidlink.pro — MAL ID directly, most reliable for anime
+    `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}`,
+    // Source 2: vidsrc.icu — needs AniList ID
+    alId ? `https://vidsrc.icu/embed/anime/${alId}/${ep}/${audioType === 'dub' ? 1 : 0}` : null,
+    // Source 3: 2embed.skin
+    `https://www.2embed.skin/embedanime/${mal_id}/${ep}`,
+    // Source 4: vidlink with dub fallback
+    `https://vidlink.pro/anime/${mal_id}/${ep}/sub`,
+  ].filter(Boolean);
+
+  // Fetch AniList ID in background for source 2
   useEffect(() => {
-    setLoading(true);
-    setError(false);
-    getAnilistId(mal_id)
-      .then((id) => {
-        if (id) setAnilistId(id);
-        else setError(true);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
+    getAnilistId(mal_id).then(setAnilistId);
   }, [mal_id]);
 
   // Load saved progress
@@ -62,7 +60,7 @@ export default function Watch() {
     }
   }, [storageKey]);
 
-  // Save progress via wall-clock time tracking
+  // Save progress via wall-clock time
   const sessionStartRef = useRef(Date.now());
   useEffect(() => {
     sessionStartRef.current = Date.now();
@@ -79,24 +77,30 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  // Hide skip intro after ~2 minutes
+  // Hide skip intro after intro window
   useEffect(() => {
     if (!showSkipIntro) return;
     const timer = setTimeout(() => setShowSkipIntro(false), (INTRO_DURATION + 30) * 1000);
     return () => clearTimeout(timer);
   }, [showSkipIntro]);
 
-  // vidsrc.icu anime embed: /embed/anime/{anilist_id}/{episode}/{dub}
-  // dub: 0 = sub, 1 = dub
-  const getEmbedUrl = (aniId) => {
-    const dubFlag = audioType === 'dub' ? 1 : 0;
-    return `https://vidsrc.icu/embed/anime/${aniId}/${ep}/${dubFlag}`;
-  };
+  const sources = getSources(anilistId);
+  const currentSrc = sources[sourceIndex] || sources[0];
 
   const handleSkipIntro = () => {
     localStorage.setItem(storageKey, String(INTRO_DURATION));
     setResumeTime(INTRO_DURATION);
     setShowSkipIntro(false);
+  };
+
+  const handleNextSource = () => {
+    const next = (sourceIndex + 1) % sources.length;
+    setSourceIndex(next);
+  };
+
+  const handleAudioSwitch = (type) => {
+    setAudioType(type);
+    setSourceIndex(0); // reset to best source when switching
   };
 
   return (
@@ -117,7 +121,7 @@ export default function Watch() {
         {/* Sub / Dub toggle */}
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
-            onClick={() => setAudioType('sub')}
+            onClick={() => handleAudioSwitch('sub')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               audioType === 'sub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
             }`}
@@ -125,7 +129,7 @@ export default function Watch() {
             <Captions className="w-3.5 h-3.5" /> SUB
           </button>
           <button
-            onClick={() => setAudioType('dub')}
+            onClick={() => handleAudioSwitch('dub')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               audioType === 'dub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
             }`}
@@ -137,68 +141,54 @@ export default function Watch() {
 
       {/* Video Player */}
       <div className="relative w-full bg-black flex-shrink-0" style={{ paddingTop: 'min(56.25%, 80vh)' }}>
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-              <p className="text-zinc-500 text-sm">Loading player...</p>
-            </div>
-          </div>
-        )}
+        <iframe
+          ref={iframeRef}
+          key={`${mal_id}-${ep}-${audioType}-${sourceIndex}`}
+          src={currentSrc}
+          className="absolute inset-0 w-full h-full"
+          allowFullScreen
+          allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+          frameBorder="0"
+          title={`${title} Episode ${ep}`}
+        />
 
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
-            <div className="text-center space-y-3">
-              <p className="text-zinc-400">Could not load this episode.</p>
-              <Link
-                to={`/AnimeDetail?id=${mal_id}`}
-                className="text-emerald-400 text-sm hover:underline"
-              >
-                ← Back to anime
-              </Link>
-            </div>
+        {/* Skip Intro */}
+        {showSkipIntro && (
+          <div className="absolute bottom-14 right-4 z-10">
+            <button
+              onClick={handleSkipIntro}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900/90 border border-zinc-600 hover:border-emerald-500 text-white text-sm font-semibold rounded-lg backdrop-blur-sm transition-all hover:bg-zinc-800 shadow-lg"
+            >
+              <SkipForward className="w-4 h-4 text-emerald-400" />
+              Skip Intro
+            </button>
           </div>
-        )}
-
-        {!loading && !error && anilistId && (
-          <>
-            <iframe
-              ref={iframeRef}
-              key={`${anilistId}-${ep}-${audioType}`}
-              src={getEmbedUrl(anilistId)}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              frameBorder="0"
-              title={`${title} Episode ${ep}`}
-            />
-            {/* Skip Intro button */}
-            {showSkipIntro && (
-              <div className="absolute bottom-14 right-4 z-10">
-                <button
-                  onClick={handleSkipIntro}
-                  className="flex items-center gap-2 px-4 py-2 bg-zinc-900/90 border border-zinc-600 hover:border-emerald-500 text-white text-sm font-semibold rounded-lg backdrop-blur-sm transition-all hover:bg-zinc-800 shadow-lg"
-                >
-                  <SkipForward className="w-4 h-4 text-emerald-400" />
-                  Skip Intro
-                </button>
-              </div>
-            )}
-          </>
         )}
       </div>
 
-      {/* Info bar */}
-      <div className="px-4 md:px-8 py-4 border-t border-zinc-900">
-        <p className="text-white font-semibold">{title}</p>
-        <p className="text-zinc-500 text-sm mt-0.5">
-          Episode {ep}
-          {resumeTime > 10 && (
-            <span className="ml-3 text-emerald-500/70 text-xs">
-              ● Resumed from {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
-            </span>
-          )}
-        </p>
+      {/* Info + source switcher */}
+      <div className="px-4 md:px-8 py-4 border-t border-zinc-900 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-white font-semibold">{title}</p>
+          <p className="text-zinc-500 text-sm mt-0.5">
+            Episode {ep}
+            {resumeTime > 10 && (
+              <span className="ml-3 text-emerald-500/70 text-xs">
+                ● Resumed from {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* Try different server button */}
+        <button
+          onClick={handleNextSource}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white text-sm rounded-lg transition-all"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Try different server
+          <span className="text-zinc-700 text-xs">({sourceIndex + 1}/{sources.length})</span>
+        </button>
       </div>
     </div>
   );
