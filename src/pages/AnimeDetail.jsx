@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
 import AnimeCard from '../components/anime/AnimeCard';
 import {
-  ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv, ExternalLink,
+  ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv,
   Clock, Users, TrendingUp, Award, ChevronDown, ChevronUp
 } from 'lucide-react';
 
