@@ -1,33 +1,57 @@
-import React from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv, Tag, Clock, ExternalLink } from 'lucide-react';
+import { JikanAPI } from '../lib/jikan';
+import AnimeCard from '../components/anime/AnimeCard';
+import {
+  ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv, ExternalLink,
+  Clock, Users, TrendingUp, Award, ChevronDown, ChevronUp
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AnimeDetail() {
   const urlParams = new URLSearchParams(window.location.search);
-  const id = urlParams.get('id');
+  const mal_id = urlParams.get('id');
+  const [showFullDesc, setShowFullDesc] = useState(false);
+  const [epPage, setEpPage] = useState(1);
 
   const { data: anime, isLoading } = useQuery({
-    queryKey: ['anime-detail', id],
-    queryFn: async () => {
-      const list = await base44.entities.Anime.filter({ id });
-      return list[0] || null;
-    },
-    enabled: !!id,
+    queryKey: ['anime-detail', mal_id],
+    queryFn: () => JikanAPI.getById(mal_id),
+    enabled: !!mal_id,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: characters } = useQuery({
+    queryKey: ['anime-chars', mal_id],
+    queryFn: () => JikanAPI.getCharacters(mal_id),
+    enabled: !!mal_id,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const { data: recommendations } = useQuery({
+    queryKey: ['anime-recs', mal_id],
+    queryFn: () => JikanAPI.getRecommendations(mal_id),
+    enabled: !!mal_id,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const { data: episodes } = useQuery({
+    queryKey: ['anime-eps', mal_id, epPage],
+    queryFn: () => JikanAPI.getEpisodes(mal_id, epPage),
+    enabled: !!mal_id && !!anime,
+    staleTime: 1000 * 60 * 10,
   });
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
-        <div className="h-[50vh] bg-zinc-900 animate-pulse" />
+        <div className="h-[50vh] bg-zinc-900/50 animate-pulse" />
         <div className="container mx-auto max-w-7xl px-6 -mt-32 relative z-10 space-y-4">
-          <Skeleton className="h-10 w-96 bg-zinc-800" />
+          <Skeleton className="h-12 w-96 bg-zinc-800" />
           <Skeleton className="h-4 w-64 bg-zinc-800" />
-          <Skeleton className="h-24 w-full max-w-2xl bg-zinc-800" />
+          <Skeleton className="h-32 w-full max-w-2xl bg-zinc-800" />
         </div>
       </div>
     );
@@ -37,171 +61,233 @@ export default function AnimeDetail() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
         <p className="text-zinc-500">Anime not found</p>
-        <Link to="/Home">
-          <Button variant="outline" className="border-zinc-800 text-zinc-400 gap-2">
-            <ArrowLeft className="w-4 h-4" /> Back to Home
-          </Button>
-        </Link>
+        <Link to="/Home"><Button variant="outline" className="border-zinc-800 text-zinc-400 gap-2"><ArrowLeft className="w-4 h-4" />Back</Button></Link>
       </div>
     );
   }
 
+  const desc = anime.description || '';
+  const shortDesc = desc.length > 400 ? desc.slice(0, 400) + '...' : desc;
+
+  const statusColor = anime.status === 'ongoing' ? 'bg-blue-500/20 text-blue-400' : anime.status === 'upcoming' ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400';
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Banner */}
-      <div className="relative h-[50vh] min-h-[360px]">
-        {anime.banner_image || anime.cover_image ? (
-          <img
-            src={anime.banner_image || anime.cover_image}
-            alt={anime.title}
-            className="w-full h-full object-cover"
-          />
+      <div className="relative h-[55vh] min-h-[380px]">
+        {anime.cover_image ? (
+          <>
+            <img src={anime.cover_image} alt={anime.title} className="w-full h-full object-cover object-top" style={{ filter: 'blur(2px) brightness(0.4)' }} />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+          </>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-emerald-950 to-zinc-950" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/80 to-transparent" />
       </div>
 
-      {/* Content */}
-      <div className="container mx-auto max-w-7xl px-4 md:px-8 -mt-48 relative z-10">
-        <Link to="/Home" className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-emerald-400 transition-colors mb-6">
+      <div className="container mx-auto max-w-7xl px-4 md:px-8 -mt-56 relative z-10">
+        <Link to={-1} className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-emerald-400 transition-colors mb-6">
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
 
         <div className="flex flex-col md:flex-row gap-8">
           {/* Poster */}
-          <div className="w-48 md:w-56 flex-shrink-0">
-            <div className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 shadow-2xl shadow-black/50">
-              {anime.cover_image ? (
-                <img src={anime.cover_image} alt={anime.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-emerald-900/30 to-zinc-900 flex items-center justify-center">
-                  <Play className="w-12 h-12 text-emerald-500/30" />
-                </div>
-              )}
+          <div className="w-44 md:w-52 flex-shrink-0">
+            <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-900 shadow-2xl shadow-black/70 border border-zinc-800/50">
+              {anime.cover_image
+                ? <img src={anime.cover_image} alt={anime.title} className="w-full h-full object-cover" />
+                : <div className="w-full h-full bg-gradient-to-br from-emerald-900/30 to-zinc-900 flex items-center justify-center"><Play className="w-12 h-12 text-emerald-500/30" /></div>
+              }
             </div>
+
+            {/* Score card */}
+            {anime.score > 0 && (
+              <div className="mt-3 bg-zinc-900/80 rounded-xl p-3 border border-zinc-800/50 text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  <span className="text-2xl font-black text-white">{anime.score}</span>
+                </div>
+                <p className="text-xs text-zinc-600">{(anime.scored_by / 1000).toFixed(0)}K ratings</p>
+              </div>
+            )}
           </div>
 
           {/* Details */}
           <div className="flex-1 min-w-0">
-            {/* Tags */}
+            {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              {anime.rating && (
-                <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  {anime.rating}
-                </span>
-              )}
-              {anime.quality && (
-                <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-violet-500/20 text-violet-400">
-                  {anime.quality}
-                </span>
-              )}
-              {anime.type && (
-                <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-800 text-zinc-400">
-                  {anime.type}
-                </span>
-              )}
-              {anime.status && (
-                <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
-                  anime.status === 'ongoing' ? 'bg-blue-500/20 text-blue-400' :
-                  anime.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                  'bg-orange-500/20 text-orange-400'
-                }`}>
-                  {anime.status.charAt(0).toUpperCase() + anime.status.slice(1)}
-                </span>
-              )}
+              {anime.rating && <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">{anime.rating}</span>}
+              {anime.type && <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-zinc-800 text-zinc-400">{anime.type}</span>}
+              {anime.status && <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${statusColor}`}>{anime.status === 'ongoing' ? 'Currently Airing' : anime.status === 'upcoming' ? 'Upcoming' : 'Completed'}</span>}
+              {anime.season && <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-violet-500/20 text-violet-400 capitalize">{anime.season} {anime.release_year}</span>}
             </div>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight mb-4">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight mb-2">
               {anime.title}
             </h1>
-
-            {/* Score */}
-            {anime.score > 0 && (
-              <div className="flex items-center gap-2 mb-4">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                <span className="text-xl font-bold text-white">{anime.score}</span>
-                <span className="text-sm text-zinc-600">/ 10</span>
-              </div>
+            {anime.title_japanese && (
+              <p className="text-zinc-600 text-sm mb-4">{anime.title_japanese}</p>
             )}
 
             {/* Genres */}
             {anime.genres?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-5">
                 {anime.genres.map(g => (
-                  <Link
-                    key={g}
-                    to={`/Search?q=${encodeURIComponent(g)}`}
-                    className="px-3 py-1 rounded-lg text-xs font-medium bg-zinc-800/80 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors"
-                  >
+                  <Link key={g} to={`/Search?q=${encodeURIComponent(g)}`}
+                    className="px-3 py-1 rounded-lg text-xs font-medium bg-zinc-800/80 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors">
                     {g}
                   </Link>
                 ))}
               </div>
             )}
 
-            {/* Info grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {anime.release_year && (
                 <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
-                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1">
-                    <Calendar className="w-3 h-3" /> Release
-                  </div>
-                  <p className="text-white font-semibold">{anime.release_year}</p>
+                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Calendar className="w-3 h-3" /> Year</div>
+                  <p className="text-white font-bold">{anime.release_year}</p>
                 </div>
               )}
               {anime.episodes > 0 && (
                 <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
-                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1">
-                    <Tv className="w-3 h-3" /> Episodes
-                  </div>
-                  <p className="text-white font-semibold">{anime.episodes}</p>
+                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Tv className="w-3 h-3" /> Episodes</div>
+                  <p className="text-white font-bold">{anime.episodes}</p>
                 </div>
               )}
-              {anime.sub_episodes > 0 && (
+              {anime.duration && (
                 <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
-                  <div className="flex items-center gap-1.5 text-violet-400 text-xs mb-1">
-                    <Captions className="w-3 h-3" /> Sub
-                  </div>
-                  <p className="text-white font-semibold">{anime.sub_episodes} eps</p>
+                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Clock className="w-3 h-3" /> Duration</div>
+                  <p className="text-white font-bold text-xs">{anime.duration}</p>
                 </div>
               )}
-              {anime.dub_episodes > 0 && (
+              {anime.rank > 0 && (
                 <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
-                  <div className="flex items-center gap-1.5 text-blue-400 text-xs mb-1">
-                    <Mic className="w-3 h-3" /> Dub
-                  </div>
-                  <p className="text-white font-semibold">{anime.dub_episodes} eps</p>
+                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Award className="w-3 h-3" /> MAL Rank</div>
+                  <p className="text-white font-bold">#{anime.rank}</p>
+                </div>
+              )}
+              {anime.members > 0 && (
+                <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
+                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Users className="w-3 h-3" /> Members</div>
+                  <p className="text-white font-bold">{(anime.members / 1000).toFixed(0)}K</p>
+                </div>
+              )}
+              {anime.studios?.length > 0 && (
+                <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50 col-span-2">
+                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><TrendingUp className="w-3 h-3" /> Studio</div>
+                  <p className="text-white font-bold text-sm">{anime.studios.join(', ')}</p>
+                </div>
+              )}
+              {anime.broadcast && (
+                <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50 col-span-2">
+                  <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Tv className="w-3 h-3" /> Broadcast</div>
+                  <p className="text-white font-bold text-xs">{anime.broadcast}</p>
                 </div>
               )}
             </div>
 
             {/* Description */}
-            {anime.description && (
+            {desc && (
               <div className="mb-8">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-2">Synopsis</h3>
-                <p className="text-zinc-400 leading-relaxed">{anime.description}</p>
+                <p className="text-zinc-400 leading-relaxed text-sm">
+                  {showFullDesc ? desc : shortDesc}
+                </p>
+                {desc.length > 400 && (
+                  <button onClick={() => setShowFullDesc(!showFullDesc)}
+                    className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 mt-2 transition-colors">
+                    {showFullDesc ? <><ChevronUp className="w-3 h-3" /> Show less</> : <><ChevronDown className="w-3 h-3" /> Read more</>}
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Action buttons */}
+            {/* CTA */}
             <div className="flex flex-wrap gap-3">
-              {anime.watch_url && (
-                <a href={anime.watch_url} target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-8 py-5 rounded-xl gap-2 shadow-lg shadow-emerald-500/20">
-                    <Play className="w-4 h-4 fill-black" /> Watch Now
-                  </Button>
-                </a>
-              )}
               <a href={`https://animekai.to/search?keyword=${encodeURIComponent(anime.title)}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" className="border-zinc-700 bg-white/5 hover:bg-white/10 text-zinc-300 px-6 py-5 rounded-xl gap-2">
-                  <ExternalLink className="w-4 h-4" /> Watch on AnimeKai
+                <Button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-8 py-5 rounded-xl gap-2 shadow-lg shadow-emerald-500/20">
+                  <Play className="w-4 h-4 fill-black" /> Watch on AnimeKai
+                </Button>
+              </a>
+              <a href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(anime.title)}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="border-zinc-700 bg-white/5 hover:bg-white/10 text-zinc-300 px-5 py-5 rounded-xl gap-2">
+                  <ExternalLink className="w-4 h-4" /> AniWatch
+                </Button>
+              </a>
+              <a href={`https://animepahe.si/search?q=${encodeURIComponent(anime.title)}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="border-zinc-700 bg-white/5 hover:bg-white/10 text-zinc-300 px-5 py-5 rounded-xl gap-2">
+                  <ExternalLink className="w-4 h-4" /> AnimePahe
                 </Button>
               </a>
             </div>
           </div>
         </div>
+
+        {/* Episodes */}
+        {episodes?.data?.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-xl font-bold text-white mb-4">Episodes</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {episodes.data.map((ep) => (
+                <div key={ep.mal_id}
+                  className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 hover:border-emerald-500/30 hover:bg-zinc-900 transition-all">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs text-zinc-600 mb-1">Episode {ep.mal_id}</p>
+                      <p className="text-sm font-medium text-zinc-300 line-clamp-1">{ep.title || `Episode ${ep.mal_id}`}</p>
+                    </div>
+                    {ep.score > 0 && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                        <span className="text-xs text-zinc-500">{ep.score}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {episodes.pagination?.has_next_page && (
+              <Button variant="outline" onClick={() => setEpPage(p => p + 1)}
+                className="mt-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white rounded-xl w-full">
+                Load More Episodes
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Characters */}
+        {characters?.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-xl font-bold text-white mb-4">Characters</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+              {characters.map((c) => (
+                <div key={c.character?.mal_id} className="text-center">
+                  <div className="aspect-square rounded-xl overflow-hidden bg-zinc-900 mb-2">
+                    {c.character?.images?.jpg?.image_url
+                      ? <img src={c.character.images.jpg.image_url} alt={c.character.name} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-zinc-800" />
+                    }
+                  </div>
+                  <p className="text-xs text-zinc-500 line-clamp-1">{c.character?.name}</p>
+                  <p className="text-[10px] text-zinc-700 line-clamp-1">{c.role}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recommendations */}
+        {recommendations?.length > 0 && (
+          <div className="mt-12 mb-8">
+            <h2 className="text-xl font-bold text-white mb-4">You Might Also Like</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {recommendations.slice(0, 12).map((rec) => (
+                <AnimeCard key={rec.mal_id} anime={rec} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
