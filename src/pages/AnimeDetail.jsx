@@ -7,6 +7,7 @@ import {
   ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv, ExternalLink,
   Clock, Users, TrendingUp, Award, ChevronDown, ChevronUp
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -230,21 +231,27 @@ export default function AnimeDetail() {
             <h2 className="text-xl font-bold text-white mb-4">Episodes</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {episodes.data.map((ep) => (
-                <div key={ep.mal_id}
-                  className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 hover:border-emerald-500/30 hover:bg-zinc-900 transition-all">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs text-zinc-600 mb-1">Episode {ep.mal_id}</p>
-                      <p className="text-sm font-medium text-zinc-300 line-clamp-1">{ep.title || `Episode ${ep.mal_id}`}</p>
-                    </div>
+                <Link
+                  key={ep.mal_id}
+                  to={`/Watch?id=${mal_id}&ep=${ep.mal_id}&title=${encodeURIComponent(anime.title)}`}
+                  className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all flex items-start justify-between gap-2 group"
+                >
+                  <div>
+                    <p className="text-xs text-zinc-600 mb-1">Episode {ep.mal_id}</p>
+                    <p className="text-sm font-medium text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">{ep.title || `Episode ${ep.mal_id}`}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {ep.score > 0 && (
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-1">
                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                         <span className="text-xs text-zinc-500">{ep.score}</span>
                       </div>
                     )}
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/10 group-hover:bg-emerald-500 flex items-center justify-center transition-colors">
+                      <Play className="w-3 h-3 text-emerald-400 group-hover:text-black fill-emerald-400 group-hover:fill-black transition-colors" />
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             {episodes.pagination?.has_next_page && (
