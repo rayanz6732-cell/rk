@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, SkipForward, Mic, Captions, Server, Loader2 } from 'lucide-react';
+import { ArrowLeft, SkipForward, Mic, Captions, Server, Loader2, Play } from 'lucide-react';
+import { JikanAPI } from '../lib/jikan';
 
 const INTRO_DURATION = 90;
 
