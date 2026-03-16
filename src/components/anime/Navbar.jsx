@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, Menu, X } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Search, Menu, X, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import DeleteAccountButton from './DeleteAccountButton';
+
+const CHILD_PAGES = ['/AnimeDetail', '/Watch'];
 
 export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const isChildPage = CHILD_PAGES.some(p => pathname.startsWith(p));
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -19,22 +25,35 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-zinc-800/50">
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-zinc-800/50"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <div className="container mx-auto px-4 md:px-8 max-w-7xl">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+        <div className="flex items-center justify-between h-14">
+          {/* Left: back arrow on child pages, logo on root */}
+          {isChildPage ? (
+            <button
+              onClick={() => navigate(-1)}
+              className="md:hidden flex items-center gap-1.5 text-sm text-zinc-400 hover:text-emerald-400 transition-colors select-none"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          ) : null}
+
           <Link to="/Home" className="flex items-center gap-1.5">
-            <span className="text-2xl font-black text-white tracking-tighter">
+            <span className="text-2xl font-black text-white tracking-tighter select-none">
               R<span className="text-emerald-500">K</span>
             </span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/Home" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium">Home</Link>
-            <Link to="/Search" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium">Browse</Link>
-            <Link to="/Search?filter=trending" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium">Trending</Link>
-            <Link to="/Search?filter=new" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium">New Releases</Link>
+            <Link to="/Home" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">Home</Link>
+            <Link to="/Search" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">Browse</Link>
+            <Link to="/Search?filter=trending" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">Trending</Link>
+            <Link to="/Search?filter=new" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">New Releases</Link>
           </div>
 
           {/* Search + Mobile Toggle */}
@@ -46,7 +65,7 @@ export default function Navbar() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search anime..."
-                  className="w-48 md:w-64 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-600 text-sm h-9 rounded-lg focus-visible:ring-emerald-500/50"
+                  className="w-40 md:w-64 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-600 text-sm h-9 rounded-lg focus-visible:ring-emerald-500/50"
                 />
                 <button
                   type="button"
@@ -59,15 +78,17 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => setSearchOpen(true)}
-                className="w-9 h-9 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center transition-colors"
+                className="w-9 h-9 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center transition-colors select-none"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 <Search className="w-4 h-4 text-zinc-400" />
               </button>
             )}
 
+            {/* Mobile hamburger — hidden on mobile since we use bottom tab bar */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden w-9 h-9 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center"
+              className="hidden md:hidden w-9 h-9 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center"
             >
               {mobileOpen ? <X className="w-4 h-4 text-zinc-400" /> : <Menu className="w-4 h-4 text-zinc-400" />}
             </button>
@@ -75,13 +96,13 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Desktop mobile menu (md breakpoint fallback) */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-zinc-800/50 px-6 py-4 space-y-3">
-          <Link to="/Home" onClick={() => setMobileOpen(false)} className="block text-sm text-zinc-300 hover:text-emerald-400 py-2">Home</Link>
-          <Link to="/Search" onClick={() => setMobileOpen(false)} className="block text-sm text-zinc-300 hover:text-emerald-400 py-2">Browse</Link>
-          <Link to="/Search?filter=trending" onClick={() => setMobileOpen(false)} className="block text-sm text-zinc-300 hover:text-emerald-400 py-2">Trending</Link>
-          <Link to="/Search?filter=new" onClick={() => setMobileOpen(false)} className="block text-sm text-zinc-300 hover:text-emerald-400 py-2">New Releases</Link>
+        <div className="hidden md:hidden bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-zinc-800/50 px-6 py-4 space-y-3">
+          <Link to="/Home" onClick={() => setMobileOpen(false)} className="block text-sm text-zinc-300 hover:text-emerald-400 py-2 select-none">Home</Link>
+          <Link to="/Search" onClick={() => setMobileOpen(false)} className="block text-sm text-zinc-300 hover:text-emerald-400 py-2 select-none">Browse</Link>
+          <Link to="/Search?filter=trending" onClick={() => setMobileOpen(false)} className="block text-sm text-zinc-300 hover:text-emerald-400 py-2 select-none">Trending</Link>
+          <DeleteAccountButton />
         </div>
       )}
     </nav>

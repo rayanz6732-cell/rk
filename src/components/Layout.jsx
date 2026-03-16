@@ -1,8 +1,15 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from './anime/Navbar';
+import BottomTabBar from './anime/BottomTabBar';
+
+const HIDE_FOOTER_PAGES = ['/Watch'];
 
 export default function Layout() {
+  const location = useLocation();
+  const hideFooter = HIDE_FOOTER_PAGES.some(p => location.pathname.startsWith(p));
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <style>{`
@@ -25,21 +32,36 @@ export default function Layout() {
           --input: 0 0% 15%;
           --ring: 142 71% 45%;
         }
-        body { background: #0a0a0a; }
+        body {
+          background: #0a0a0a;
+          overscroll-behavior: none;
+        }
       `}</style>
       <Navbar />
-      <main className="pt-16">
-        <Outlet />
+      <main className="pt-14 pb-safe-bottom">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: 'easeInOut' }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/50 mt-16 py-8 px-6">
-        <div className="container mx-auto max-w-7xl text-center">
-          <span className="text-2xl font-black text-white tracking-tighter">
-            R<span className="text-emerald-500">K</span>
-          </span>
-          <p className="text-xs text-zinc-600 mt-2">Your ultimate anime destination.</p>
-        </div>
-      </footer>
+      {!hideFooter && (
+        <footer className="border-t border-zinc-800/50 mt-16 py-8 px-6 pb-20 md:pb-8">
+          <div className="container mx-auto max-w-7xl text-center">
+            <span className="text-2xl font-black text-white tracking-tighter select-none">
+              R<span className="text-emerald-500">K</span>
+            </span>
+            <p className="text-xs text-zinc-600 mt-2">Your ultimate anime destination.</p>
+          </div>
+        </footer>
+      )}
+      <BottomTabBar />
     </div>
   );
 }

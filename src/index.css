@@ -84,5 +84,23 @@
 
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
+}
+
+/* Safe area utilities */
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Disable tap highlight on interactive elements */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Disable text selection on nav/button elements */
+nav, button {
+  user-select: none;
+  -webkit-user-select: none;
 }
