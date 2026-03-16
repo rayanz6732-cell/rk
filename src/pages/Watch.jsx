@@ -34,6 +34,11 @@ export default function Watch() {
   const [anilistId, setAnilistId] = useState(null);
   const [loadingAnilist, setLoadingAnilist] = useState(true);
   const [sourceIndex, setSourceIndex] = useState(0);
+  const [episodes, setEpisodes] = useState([]);
+
+  useEffect(() => {
+    JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
+  }, [mal_id]);
 
   const isDub = audioType === 'dub';
 
