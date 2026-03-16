@@ -5,7 +5,11 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import { Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Search from './pages/Search';
+import AnimeDetail from './pages/AnimeDetail';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,7 +37,12 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route element={<Layout />}>
+        <Route path="/" element={<Navigate to="/Home" replace />} />
+        <Route path="/Home" element={<Home />} />
+        <Route path="/Search" element={<Search />} />
+        <Route path="/AnimeDetail" element={<AnimeDetail />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
