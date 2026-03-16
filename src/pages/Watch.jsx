@@ -76,48 +76,35 @@ export default function Watch() {
 
   const al = anilistId;
 
-  // All sources — MAL-based first (no conversion needed), then AniList-based
+  // Confirmed working sources only
   const allSources = [
-    // MAL-based (always available immediately)
+    // ✅ CONFIRMED WORKING: vidsrc.cc uses MAL IDs directly — no conversion needed
     {
-      name: 'VidLink',
-      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true&primaryColor=10b981`,
+      name: 'VidSrc CC',
+      url: `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}`,
       needsAL: false,
     },
     {
-      name: 'VidLink JW',
-      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true&player=jw`,
+      name: 'VidSrc CC v3',
+      url: `https://vidsrc.cc/v3/embed/anime/${mal_id}/${ep}/${audioType}`,
       needsAL: false,
     },
-    // AniList-based
+    // VidPlus — shows UI but may need time to load (AniList based)
     {
       name: 'VidPlus',
       url: al ? `https://player.vidplus.to/embed/anime/${al}/${ep}?dub=${isDub}&primarycolor=10b981` : null,
       needsAL: true,
     },
+    // VidSrc ICU — AniList based
     {
       name: 'VidSrc ICU',
       url: al ? `https://vidsrc.icu/embed/anime/${al}/${ep}/${isDub ? 1 : 0}` : null,
       needsAL: true,
     },
+    // VidLink — MAL based, sometimes works
     {
-      name: 'VidSrc.me',
-      url: al ? `https://vidsrc.me/embed/anime?id=${al}&e=${ep}` : null,
-      needsAL: true,
-    },
-    {
-      name: 'Rive',
-      url: al ? `https://rivestream.org/embed?type=anime&id=${al}&episode=${ep}&isDub=${isDub}` : null,
-      needsAL: true,
-    },
-    {
-      name: 'AniWatch',
-      url: al ? `https://aniwatch.to/anime/watch?id=${al}&ep=${ep}` : null,
-      needsAL: true,
-    },
-    {
-      name: 'AnimeOwl',
-      url: `https://animeowl.live/embed/${mal_id}/${ep}`,
+      name: 'VidLink',
+      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true`,
       needsAL: false,
     },
   ];
