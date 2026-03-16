@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Star, Captions, Mic } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Play, Star } from 'lucide-react';
+
 
 export default function AnimeCard({ anime }) {
   return (
-    <Link to={`/AnimeDetail?id=${anime.id}`} className="group relative block">
+    <Link to={`/AnimeDetail?id=${anime.mal_id || anime.id}`} className="group relative block">
       <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900">
         {anime.cover_image ? (
           <img
@@ -45,19 +45,14 @@ export default function AnimeCard({ anime }) {
 
         {/* Episode counts */}
         <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5">
-          {anime.sub_episodes > 0 && (
-            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-500/90 text-[10px] font-medium text-white">
-              <Captions className="w-3 h-3" /> {anime.sub_episodes}
-            </span>
-          )}
-          {anime.dub_episodes > 0 && (
-            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/90 text-[10px] font-medium text-white">
-              <Mic className="w-3 h-3" /> {anime.dub_episodes}
+          {anime.score > 0 && (
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-[10px] font-medium text-yellow-400 ml-auto">
+              ★ {anime.score}
             </span>
           )}
           {anime.episodes > 0 && (
-            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700/90 text-[10px] font-medium text-white ml-auto">
-              EP {anime.latest_episode || anime.episodes}
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700/90 text-[10px] font-medium text-white">
+              {anime.episodes} EP
             </span>
           )}
         </div>
