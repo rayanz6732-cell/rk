@@ -206,21 +206,11 @@ export default function AnimeDetail() {
 
             {/* CTA */}
             <div className="flex flex-wrap gap-3">
-              <a href={`https://animekai.to/search?keyword=${encodeURIComponent(anime.title)}`} target="_blank" rel="noopener noreferrer">
+              <Link to={`/Watch?id=${mal_id}&ep=1&title=${encodeURIComponent(anime.title)}`}>
                 <Button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-8 py-5 rounded-xl gap-2 shadow-lg shadow-emerald-500/20">
-                  <Play className="w-4 h-4 fill-black" /> Watch on AnimeKai
+                  <Play className="w-4 h-4 fill-black" /> Watch Now
                 </Button>
-              </a>
-              <a href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(anime.title)}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" className="border-zinc-700 bg-white/5 hover:bg-white/10 text-zinc-300 px-5 py-5 rounded-xl gap-2">
-                  <ExternalLink className="w-4 h-4" /> AniWatch
-                </Button>
-              </a>
-              <a href={`https://animepahe.si/search?q=${encodeURIComponent(anime.title)}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" className="border-zinc-700 bg-white/5 hover:bg-white/10 text-zinc-300 px-5 py-5 rounded-xl gap-2">
-                  <ExternalLink className="w-4 h-4" /> AnimePahe
-                </Button>
-              </a>
+              </Link>
             </div>
           </div>
         </div>

@@ -37,7 +37,7 @@ export default function Layout() {
           <span className="text-2xl font-black text-white tracking-tighter">
             R<span className="text-emerald-500">K</span>
           </span>
-          <p className="text-xs text-zinc-600 mt-2">Your ultimate anime destination. Powered by AnimeKai data.</p>
+          <p className="text-xs text-zinc-600 mt-2">Your ultimate anime destination.</p>
         </div>
       </footer>
     </div>
