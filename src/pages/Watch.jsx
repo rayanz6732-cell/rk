@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, SkipForward, Mic, Captions, ChevronLeft, ChevronRight, Server } from 'lucide-react';
+import { ArrowLeft, SkipForward, Mic, Captions, Server, Loader2 } from 'lucide-react';
 
 const INTRO_DURATION = 90;
 
@@ -31,14 +31,19 @@ export default function Watch() {
   const [showSkipIntro, setShowSkipIntro] = useState(true);
   const [resumeTime, setResumeTime] = useState(0);
   const [anilistId, setAnilistId] = useState(null);
+  const [loadingAnilist, setLoadingAnilist] = useState(true);
   const [sourceIndex, setSourceIndex] = useState(0);
 
-  // Fetch AniList ID for sources that need it
+  const isDub = audioType === 'dub';
+
   useEffect(() => {
-    getAnilistId(mal_id).then(setAnilistId);
+    setLoadingAnilist(true);
+    getAnilistId(mal_id).then(id => {
+      setAnilistId(id);
+      setLoadingAnilist(false);
+    });
   }, [mal_id]);
 
-  // Load saved progress
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
@@ -47,7 +52,6 @@ export default function Watch() {
     }
   }, [storageKey]);
 
-  // Save progress via wall-clock time every 15s
   const sessionStartRef = useRef(Date.now());
   useEffect(() => {
     sessionStartRef.current = Date.now();
@@ -64,46 +68,63 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  // Hide skip intro after 2 min window
   useEffect(() => {
     if (!showSkipIntro) return;
     const timer = setTimeout(() => setShowSkipIntro(false), 120000);
     return () => clearTimeout(timer);
   }, [showSkipIntro]);
 
-  const isDub = audioType === 'dub';
-  const dubVal = isDub ? 1 : 0;
+  const al = anilistId;
 
-  // Build source list — null entries are filtered when anilistId not yet loaded
+  // All sources — MAL-based first (no conversion needed), then AniList-based
   const allSources = [
+    // MAL-based (always available immediately)
     {
       name: 'VidLink',
       url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true&primaryColor=10b981`,
+      needsAL: false,
+    },
+    {
+      name: 'VidLink JW',
+      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true&player=jw`,
+      needsAL: false,
+    },
+    // AniList-based
+    {
+      name: 'VidPlus',
+      url: al ? `https://player.vidplus.to/embed/anime/${al}/${ep}?dub=${isDub}&primarycolor=10b981` : null,
+      needsAL: true,
     },
     {
       name: 'VidSrc ICU',
-      url: anilistId
-        ? `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/${dubVal}`
-        : null,
+      url: al ? `https://vidsrc.icu/embed/anime/${al}/${ep}/${isDub ? 1 : 0}` : null,
+      needsAL: true,
     },
     {
-      name: 'VidLink (JW)',
-      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true&player=jw`,
+      name: 'VidSrc.me',
+      url: al ? `https://vidsrc.me/embed/anime?id=${al}&e=${ep}` : null,
+      needsAL: true,
     },
     {
-      name: 'VidSrc ME',
-      url: anilistId
-        ? `https://vidsrc.me/embed/anime?id=${anilistId}&e=${ep}`
-        : null,
+      name: 'Rive',
+      url: al ? `https://rivestream.org/embed?type=anime&id=${al}&episode=${ep}&isDub=${isDub}` : null,
+      needsAL: true,
     },
     {
-      name: 'SmashyStream',
-      url: `https://embed.smashystream.xyz/playere.php?mal_id=${mal_id}&episode=${ep}&audio=${audioType}`,
+      name: 'AniWatch',
+      url: al ? `https://aniwatch.to/anime/watch?id=${al}&ep=${ep}` : null,
+      needsAL: true,
     },
-  ].filter(s => s.url !== null);
+    {
+      name: 'AnimeOwl',
+      url: `https://animeowl.live/embed/${mal_id}/${ep}`,
+      needsAL: false,
+    },
+  ];
 
-  const clampedIndex = Math.min(sourceIndex, allSources.length - 1);
-  const currentSource = allSources[clampedIndex];
+  const availableSources = allSources.filter(s => !s.needsAL || (!loadingAnilist && s.url));
+  const clampedIndex = Math.min(sourceIndex, availableSources.length - 1);
+  const currentSource = availableSources[clampedIndex];
 
   const handleSkipIntro = () => {
     localStorage.setItem(storageKey, String(INTRO_DURATION));
@@ -131,7 +152,6 @@ export default function Watch() {
           <span className="text-zinc-600 mx-1.5">·</span>
           Episode {ep}
         </div>
-        {/* Sub / Dub toggle */}
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
             onClick={() => handleAudioSwitch('sub')}
@@ -154,18 +174,23 @@ export default function Watch() {
 
       {/* Video Player */}
       <div className="relative w-full bg-black flex-shrink-0" style={{ paddingTop: 'min(56.25%, 80vh)' }}>
-        <iframe
-          key={`${mal_id}-${ep}-${audioType}-${clampedIndex}`}
-          src={currentSource.url}
-          className="absolute inset-0 w-full h-full"
-          allowFullScreen
-          allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-          frameBorder="0"
-          title={`${title} Episode ${ep}`}
-        />
+        {currentSource ? (
+          <iframe
+            key={`${mal_id}-${ep}-${audioType}-${clampedIndex}-${al}`}
+            src={currentSource.url}
+            className="absolute inset-0 w-full h-full"
+            allowFullScreen
+            allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+            frameBorder="0"
+            title={`${title} Episode ${ep}`}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+          </div>
+        )}
 
-        {/* Skip Intro */}
-        {showSkipIntro && (
+        {showSkipIntro && currentSource && (
           <div className="absolute bottom-14 right-4 z-10">
             <button
               onClick={handleSkipIntro}
@@ -178,7 +203,7 @@ export default function Watch() {
         )}
       </div>
 
-      {/* Info + server switcher */}
+      {/* Info + server selector */}
       <div className="px-4 md:px-8 py-4 border-t border-zinc-900">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -187,19 +212,20 @@ export default function Watch() {
               Episode {ep}
               {resumeTime > 10 && (
                 <span className="ml-3 text-emerald-500/70 text-xs">
-                  ● Resumed from {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
+                  ● Resumed {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
                 </span>
               )}
             </p>
           </div>
 
-          {/* Server selector */}
           <div className="flex flex-col gap-2">
             <p className="text-zinc-600 text-xs flex items-center gap-1.5">
-              <Server className="w-3 h-3" /> Select Server
+              <Server className="w-3 h-3" />
+              If video doesn't load, try another server
+              {loadingAnilist && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
             </p>
             <div className="flex flex-wrap gap-2">
-              {allSources.map((source, idx) => (
+              {availableSources.map((source, idx) => (
                 <button
                   key={source.name}
                   onClick={() => setSourceIndex(idx)}
