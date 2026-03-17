@@ -64,6 +64,26 @@ export default function Watch() {
           <span className="text-zinc-600 mx-1.5">·</span>
           Episode {ep}
         </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Server switcher */}
+          <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+            <button
+              onClick={() => setServer('vidsrc')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                server === 'vidsrc' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              S1
+            </button>
+            <button
+              onClick={() => setServer('2embed')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                server === '2embed' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              S2
+            </button>
+          </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
             onClick={() => setAudioType('sub')}
