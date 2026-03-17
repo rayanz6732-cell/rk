@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
 import HeroBanner from '../components/anime/HeroBanner';
 import AnimeSection from '../components/anime/AnimeSection';
 import TrendingSidebar from '../components/anime/TrendingSidebar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Play } from 'lucide-react';
 
 export default function Home() {
   const { data: currentSeason, isLoading: loadingSeason } = useQuery({
