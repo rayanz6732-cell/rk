@@ -49,7 +49,9 @@ export default function Watch() {
 
   const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}`
-    : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2`;
+    : server === '2embed'
+    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2`
+    : `https://embed.su/embed/anime/${mal_id}/${ep}/${audioType}`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
