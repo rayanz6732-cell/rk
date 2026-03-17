@@ -5,21 +5,27 @@ const BASE = 'https://api.jikan.moe/v4';
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
 let requestQueue = Promise.resolve();
-const MIN_DELAY = 400; // 400ms delay = ~2.5 requests/second (safe limit)
+const MIN_DELAY = 600; // 600ms delay = safe rate limit
 
 async function jikanFetch(path, params = {}) {
-  // Queue requests to ensure they run serially
-  requestQueue = requestQueue.then(async () => {
-    await delay(MIN_DELAY);
-    
-    const url = new URL(`${BASE}${path}`);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`Jikan API error: ${res.status}`);
-    return res.json();
+  // Queue requests to ensure they run serially with delay
+  return new Promise((resolve, reject) => {
+    requestQueue = requestQueue
+      .then(() => delay(MIN_DELAY))
+      .then(async () => {
+        try {
+          const url = new URL(`${BASE}${path}`);
+          Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+          const res = await fetch(url.toString());
+          if (!res.ok) throw new Error(`Jikan API error: ${res.status}`);
+          const data = await res.json();
+          resolve(data);
+        } catch (err) {
+          reject(err);
+        }
+      })
+      .catch(reject);
   });
-  
-  return requestQueue;
 }
 
 // Convert 24-hour time strings to 12-hour format within a broadcast string
