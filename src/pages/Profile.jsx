@@ -66,7 +66,19 @@ export default function Profile() {
     await base44.auth.updateMe({ theme: themeId });
     
     const theme = THEMES.find(t => t.id === themeId);
-    document.documentElement.style.setProperty('--primary', theme.colors.primary);
+    const root = document.documentElement;
+    root.style.setProperty('--primary', theme.colors.primary);
+    root.style.setProperty('--ring', theme.colors.primary);
+    
+    // Update CSS variable for tailwind
+    const style = document.createElement('style');
+    style.textContent = `
+      :root {
+        --primary: ${theme.colors.primary};
+        --ring: ${theme.colors.primary};
+      }
+    `;
+    document.head.appendChild(style);
   };
 
   if (!user) return (
