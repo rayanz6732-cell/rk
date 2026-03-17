@@ -1,72 +1,67 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { JikanAPI } from '../lib/jikan';
 import { Link } from 'react-router-dom';
-import { Star, Tv, Clock } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
+import { Star, Tv, Loader2 } from 'lucide-react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_PARAM = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-function extractDay(broadcastStr) {
-  if (!broadcastStr) return null;
-  for (const day of DAYS) {
-    if (broadcastStr.toLowerCase().includes(day.toLowerCase())) return day;
-  }
-  return null;
+const BASE = 'https://api.jikan.moe/v4';
+
+async function fetchScheduleDay(day) {
+  const res = await fetch(`${BASE}/schedules?filter=${day}&limit=25`);
+  if (!res.ok) return [];
+  const json = await res.json();
+  return (json.data || []).map(raw => ({
+    mal_id: raw.mal_id,
+    title: raw.title_english || raw.title,
+    cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
+    score: raw.score || 0,
+    episodes: raw.episodes || 0,
+    broadcast: raw.broadcast?.string || '',
+    type: raw.type || 'TV',
+  }));
 }
 
 export default function SeasonalCalendar() {
-  const [selectedDay, setSelectedDay] = useState(null);
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const [selectedDay, setSelectedDay] = useState(today);
 
-  const { data: seasonData, isLoading } = useQuery({
-    queryKey: ['season-calendar'],
+  // Fetch all days in parallel on mount for counts, selected day for display
+  const { data: allCounts } = useQuery({
+    queryKey: ['schedule-counts'],
     queryFn: async () => {
-      const page1 = await JikanAPI.getCurrentSeason(1);
-      const page2 = await JikanAPI.getCurrentSeason(2);
-      return [...(page1.data || []), ...(page2.data || [])];
+      const results = await Promise.all(DAY_PARAM.map(d => fetchScheduleDay(d)));
+      const map = {};
+      DAYS.forEach((day, i) => { map[day] = results[i].length; });
+      return map;
     },
     staleTime: 1000 * 60 * 30,
   });
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const selectedDayParam = DAY_PARAM[DAYS.indexOf(selectedDay)] || 'monday';
 
-  const grouped = React.useMemo(() => {
-    if (!seasonData) return {};
-    const map = {};
-    DAYS.forEach(d => map[d] = []);
-    map['Unknown'] = [];
-    seasonData.forEach(anime => {
-      const day = extractDay(anime.broadcast);
-      if (day) map[day].push(anime);
-      else map['Unknown'].push(anime);
-    });
-    return map;
-  }, [seasonData]);
-
-  const activeDays = DAYS.filter(d => grouped[d]?.length > 0);
-  const displayDay = selectedDay || today;
-
-  if (isLoading) return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-    </div>
-  );
+  const { data: dayAnime, isLoading } = useQuery({
+    queryKey: ['schedule-day', selectedDay],
+    queryFn: () => fetchScheduleDay(selectedDayParam),
+    staleTime: 1000 * 60 * 15,
+  });
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-white mb-1">Seasonal Calendar</h1>
-          <p className="text-zinc-500 text-sm">This season's airing schedule by day</p>
+          <h1 className="text-3xl font-black text-white mb-1">Airing Schedule</h1>
+          <p className="text-zinc-500 text-sm">Currently airing anime by day of the week</p>
         </div>
 
         {/* Day tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-8">
           {DAYS.map((day, i) => {
-            const count = grouped[day]?.length || 0;
+            const count = allCounts?.[day] ?? '—';
             const isToday = day === today;
-            const isActive = displayDay === day;
+            const isActive = selectedDay === day;
             return (
               <button
                 key={day}
@@ -87,26 +82,26 @@ export default function SeasonalCalendar() {
           })}
         </div>
 
-        {/* Anime grid for selected day */}
+        {/* Anime grid */}
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-lg font-bold text-white">{displayDay}</h2>
-            {displayDay === today && (
+            <h2 className="text-lg font-bold text-white">{selectedDay}</h2>
+            {selectedDay === today && (
               <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Today</span>
             )}
-            <span className="text-zinc-600 text-sm">{grouped[displayDay]?.length || 0} anime</span>
+            {dayAnime && <span className="text-zinc-600 text-sm">{dayAnime.length} anime</span>}
           </div>
 
-          {(grouped[displayDay]?.length || 0) === 0 ? (
-            <div className="text-center py-16 text-zinc-600">No anime airing on {displayDay} this season</div>
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            </div>
+          ) : !dayAnime?.length ? (
+            <div className="text-center py-16 text-zinc-600">No anime scheduled for {selectedDay}</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {grouped[displayDay].map(anime => (
-                <Link
-                  key={anime.mal_id}
-                  to={`/AnimeDetail?id=${anime.mal_id}`}
-                  className="group block"
-                >
+              {dayAnime.map(anime => (
+                <Link key={anime.mal_id} to={`/AnimeDetail?id=${anime.mal_id}`} className="group block">
                   <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 group-hover:border-emerald-500/50 transition-all mb-2">
                     {anime.cover_image
                       ? <img src={anime.cover_image} alt={anime.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -117,11 +112,6 @@ export default function SeasonalCalendar() {
                       <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
                         <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
                         <span className="text-[10px] text-yellow-300 font-bold">{anime.score}</span>
-                      </div>
-                    )}
-                    {anime.broadcast && (
-                      <div className="absolute top-2 right-2 bg-emerald-500/90 text-black text-[9px] font-bold px-1.5 py-0.5 rounded">
-                        {anime.broadcast.replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\w*\s*at\s*/i, '')}
                       </div>
                     )}
                   </div>

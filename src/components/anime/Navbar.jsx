@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Menu, X, ArrowLeft, User } from 'lucide-react';
+import { Search, Menu, X, ArrowLeft, User, CalendarDays } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import DeleteAccountButton from './DeleteAccountButton';
 
@@ -54,7 +54,9 @@ export default function Navbar() {
             <Link to="/Search" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">Browse</Link>
             <Link to="/Search?filter=trending" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">Trending</Link>
             <Link to="/Search?filter=new" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">New Releases</Link>
-            <Link to="/SeasonalCalendar" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">📅 Schedule</Link>
+            <Link to="/SeasonalCalendar" className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">
+              <CalendarDays className="w-4 h-4" /> Schedule
+            </Link>
           </div>
 
           {/* Search + Mobile Toggle */}
