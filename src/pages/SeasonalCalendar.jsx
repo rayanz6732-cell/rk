@@ -5,12 +5,19 @@ import { Star, Tv, Loader2 } from 'lucide-react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_PARAM = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const BASE = 'https://api.jikan.moe/v4';
 
-async function fetchScheduleDay(day) {
-  const res = await fetch(`${BASE}/schedules?filter=${day}&limit=25`);
+function parseBroadcastDay(broadcastStr) {
+  if (!broadcastStr) return null;
+  for (const day of DAYS) {
+    if (broadcastStr.toLowerCase().includes(day.toLowerCase())) return day;
+  }
+  return null;
+}
+
+async function fetchSeasonalAnime() {
+  const res = await fetch(`${BASE}/seasons/now?limit=100`);
   if (!res.ok) return [];
   const json = await res.json();
   return (json.data || []).map(raw => ({
@@ -20,6 +27,7 @@ async function fetchScheduleDay(day) {
     score: raw.score || 0,
     episodes: raw.episodes || 0,
     broadcast: raw.broadcast?.string || '',
+    broadcastDay: parseBroadcastDay(raw.broadcast?.string),
     type: raw.type || 'TV',
   }));
 }
@@ -28,25 +36,22 @@ export default function SeasonalCalendar() {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const [selectedDay, setSelectedDay] = useState(today);
 
-  // Fetch all days in parallel on mount for counts, selected day for display
-  const { data: allCounts } = useQuery({
-    queryKey: ['schedule-counts'],
-    queryFn: async () => {
-      const results = await Promise.all(DAY_PARAM.map(d => fetchScheduleDay(d)));
-      const map = {};
-      DAYS.forEach((day, i) => { map[day] = results[i].length; });
-      return map;
-    },
+  const { data: allAnime, isLoading } = useQuery({
+    queryKey: ['seasonal-schedule'],
+    queryFn: fetchSeasonalAnime,
     staleTime: 1000 * 60 * 30,
   });
 
-  const selectedDayParam = DAY_PARAM[DAYS.indexOf(selectedDay)] || 'monday';
+  const byDay = useMemo(() => {
+    const map = {};
+    DAYS.forEach(d => { map[d] = []; });
+    (allAnime || []).forEach(anime => {
+      if (anime.broadcastDay) map[anime.broadcastDay].push(anime);
+    });
+    return map;
+  }, [allAnime]);
 
-  const { data: dayAnime, isLoading } = useQuery({
-    queryKey: ['schedule-day', selectedDay],
-    queryFn: () => fetchScheduleDay(selectedDayParam),
-    staleTime: 1000 * 60 * 15,
-  });
+  const dayAnime = byDay[selectedDay] || [];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
@@ -59,7 +64,7 @@ export default function SeasonalCalendar() {
         {/* Day tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-8">
           {DAYS.map((day, i) => {
-            const count = allCounts?.[day] ?? '—';
+            const count = byDay[day]?.length ?? '—';
             const isToday = day === today;
             const isActive = selectedDay === day;
             return (
@@ -75,7 +80,7 @@ export default function SeasonalCalendar() {
                 }`}
               >
                 <span className="text-xs font-bold">{DAY_SHORT[i]}</span>
-                <span className={`text-lg font-black leading-tight ${isActive ? 'text-black' : 'text-white'}`}>{count}</span>
+                <span className={`text-lg font-black leading-tight ${isActive ? 'text-black' : 'text-white'}`}>{isLoading ? '—' : count}</span>
                 {isToday && !isActive && <span className="text-[9px] text-emerald-400 font-bold mt-0.5">TODAY</span>}
               </button>
             );
@@ -89,14 +94,14 @@ export default function SeasonalCalendar() {
             {selectedDay === today && (
               <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Today</span>
             )}
-            {dayAnime && <span className="text-zinc-600 text-sm">{dayAnime.length} anime</span>}
+            {!isLoading && <span className="text-zinc-600 text-sm">{dayAnime.length} anime</span>}
           </div>
 
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
             </div>
-          ) : !dayAnime?.length ? (
+          ) : !dayAnime.length ? (
             <div className="text-center py-16 text-zinc-600">No anime scheduled for {selectedDay}</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
