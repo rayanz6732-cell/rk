@@ -108,73 +108,44 @@ export default function Watch() {
           </div>
         </div>
 
-        {/* Up Next Sidebar */}
+        {/* Up Next Sidebar — desktop only */}
         {episodes.length > 0 && (() => {
           const currentEpNum = parseInt(ep);
           const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 15);
           if (!nextEps.length) return null;
           return (
-            <div className="lg:w-80 xl:w-96 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-900 flex flex-col">
-              <div className="px-4 py-3 border-b border-zinc-900">
+            <div className="hidden lg:flex flex-col w-80 xl:w-96 flex-shrink-0 border-l border-zinc-900" style={{ height: 'calc(100vh - 53px)', overflowY: 'auto' }}>
+              <div className="px-4 py-3 border-b border-zinc-900 sticky top-0 bg-[#0a0a0a] z-10">
                 <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Up Next</h3>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                {/* Mobile: horizontal scroll row */}
-                <div className="lg:hidden flex gap-3 overflow-x-auto px-4 py-3 scrollbar-none">
-                  {nextEps.map(e => {
-                    const thumb = e.images?.jpg?.image_url;
-                    return (
-                      <Link
-                        key={e.mal_id}
-                        to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
-                        className="group flex-shrink-0 w-40 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
-                      >
-                        <div className="relative aspect-video">
-                          {thumb
-                            ? <img src={thumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Play className="w-4 h-4 text-zinc-600" /></div>
-                          }
-                          <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
-                          <div className="absolute bottom-1 right-1.5 text-white font-black text-sm drop-shadow-lg">{e.mal_id}</div>
-                        </div>
-                        <div className="px-2 py-1.5">
-                          <p className="text-[10px] text-zinc-500">Episode {e.mal_id}</p>
-                          <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">{e.title || `Episode ${e.mal_id}`}</p>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-                {/* Desktop: vertical list */}
-                <div className="hidden lg:flex flex-col gap-2 p-3">
-                  {nextEps.map(e => {
-                    const thumb = e.images?.jpg?.image_url;
-                    return (
-                      <Link
-                        key={e.mal_id}
-                        to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
-                        className="group flex gap-3 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all p-2"
-                      >
-                        <div className="relative w-28 flex-shrink-0 aspect-video rounded-lg overflow-hidden">
-                          {thumb
-                            ? <img src={thumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Play className="w-4 h-4 text-zinc-600" /></div>
-                          }
-                          <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="w-7 h-7 rounded-full bg-emerald-500/90 flex items-center justify-center">
-                              <Play className="w-3 h-3 text-white fill-white ml-0.5" />
-                            </div>
+              <div className="flex flex-col gap-2 p-3">
+                {nextEps.map(e => {
+                  const thumb = e.images?.jpg?.image_url;
+                  return (
+                    <Link
+                      key={e.mal_id}
+                      to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
+                      className="group flex gap-3 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all p-2"
+                    >
+                      <div className="relative w-28 flex-shrink-0 aspect-video rounded-lg overflow-hidden">
+                        {thumb
+                          ? <img src={thumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Play className="w-4 h-4 text-zinc-600" /></div>
+                        }
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-7 h-7 rounded-full bg-emerald-500/90 flex items-center justify-center">
+                            <Play className="w-3 h-3 text-white fill-white ml-0.5" />
                           </div>
                         </div>
-                        <div className="flex flex-col justify-center min-w-0">
-                          <p className="text-[11px] text-zinc-500">Episode {e.mal_id}</p>
-                          <p className="text-xs text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors">{e.title || `Episode ${e.mal_id}`}</p>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
+                      </div>
+                      <div className="flex flex-col justify-center min-w-0">
+                        <p className="text-[11px] text-zinc-500">Episode {e.mal_id}</p>
+                        <p className="text-xs text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors">{e.title || `Episode ${e.mal_id}`}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           );
