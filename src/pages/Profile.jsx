@@ -53,12 +53,19 @@ export default function Profile() {
   const [user, setUser] = useState(null);
   const [selectedTheme, setSelectedTheme] = useState('default');
   const [showAppearance, setShowAppearance] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-      setSelectedTheme(u.theme || 'default');
-    });
+    base44.auth.me()
+      .then(u => {
+        setUser(u);
+        setSelectedTheme(u?.theme || 'default');
+      })
+      .catch(() => {
+        // User not signed in, show guest profile
+        setUser(false);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleThemeChange = async (themeId) => {
