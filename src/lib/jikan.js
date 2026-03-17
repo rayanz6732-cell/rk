@@ -3,8 +3,19 @@ const BASE = 'https://api.jikan.moe/v4';
 
 // Rate limit: 3 requests/second, 60/minute — add small delay between calls
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
+let lastRequestTime = 0;
+const MIN_DELAY = 400; // 400ms delay = ~2.5 requests/second (safe limit)
 
 async function jikanFetch(path, params = {}) {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  if (timeSinceLastRequest < MIN_DELAY) {
+    await delay(MIN_DELAY - timeSinceLastRequest);
+  }
+  
+  lastRequestTime = Date.now();
+  
   const url = new URL(`${BASE}${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString());
