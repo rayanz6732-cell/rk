@@ -37,6 +37,12 @@ const BLOCKED_DOMAINS = [
   'adsrvr.org',
   'vidyard.com',
   'ads-adnxs.com',
+  // User blocked sites
+  'primevideo.com',
+  'aliexpress.com',
+  'opera.com',
+  'flirtingtok.com',
+  'ouraidream.com',
 ];
 
 // Block ads and malware at network level
