@@ -102,6 +102,7 @@ export default function Watch() {
             <Mic className="w-3.5 h-3.5" /> DUB
           </button>
         </div>
+        </div>
       </div>
 
       {/* Main content: player + sidebar */}
