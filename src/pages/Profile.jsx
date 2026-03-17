@@ -105,14 +105,14 @@ export default function Profile() {
     `;
   };
 
-  if (!user) return (
+  if (isLoading) return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-zinc-800 border-t-emerald-500 rounded-full animate-spin" />
     </div>
   );
 
-  const earnedBadges = BADGES.filter(b => (user.badges || []).includes(b.id));
-  const unearnedBadges = BADGES.filter(b => !(user.badges || []).includes(b.id));
+  const earnedBadges = user ? BADGES.filter(b => (user.badges || []).includes(b.id)) : [];
+  const unearnedBadges = BADGES.filter(b => !earnedBadges.find(eb => eb.id === b.id));
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] py-10 px-4">
