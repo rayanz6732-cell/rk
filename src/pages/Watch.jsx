@@ -125,10 +125,7 @@ export default function Watch() {
                           className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
                         >
                           <div className="relative aspect-video">
-                            {thumb
-                              ? <img src={thumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                              : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Play className="w-5 h-5 text-zinc-600" /></div>
-                            }
+                            <img src={thumb || coverThumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                               <div className="w-9 h-9 rounded-full bg-emerald-500/90 flex items-center justify-center">
