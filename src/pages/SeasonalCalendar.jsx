@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { JikanAPI } from '../lib/jikan';
 import { Link } from 'react-router-dom';

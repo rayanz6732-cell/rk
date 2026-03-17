@@ -57,10 +57,14 @@ export async function recordWatchActivity() {
   const totalEps = (user.total_episodes_watched || 0) + 1;
   const { allBadges } = getBadgesToAward(totalEps, streak, isNightOwl, user.badges || []);
 
+  // Add ~24 minutes of watch time per episode
+  const totalMinutes = (user.total_watch_minutes || 0) + 24;
+
   await base44.auth.updateMe({
     watch_streak: streak,
     last_watched_date: today,
     total_episodes_watched: totalEps,
+    total_watch_minutes: totalMinutes,
     badges: allBadges,
   });
 }

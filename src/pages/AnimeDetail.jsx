@@ -10,6 +10,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import StarRating from '../components/anime/StarRating';
 
 export default function AnimeDetail() {
   const { search } = window.location;
