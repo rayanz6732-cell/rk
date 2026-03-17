@@ -119,6 +119,18 @@ export const JikanAPI = {
     const data = await jikanFetch('/anime', { genres: genreId, limit: 24, page, order_by: 'score', sort: 'desc' });
     return { data: data.data.map(mapAnime), pagination: data.pagination };
   },
+
+  // Trending (top by popularity, top 25 for ranked list)
+  async getTrending(page = 1) {
+    const data = await jikanFetch('/top/anime', { filter: 'bypopularity', limit: 25, page });
+    return { data: data.data.map(mapAnime), pagination: data.pagination };
+  },
+
+  // New releases (currently airing, ordered by start date)
+  async getNewReleases(page = 1) {
+    const data = await jikanFetch('/seasons/now', { limit: 25, page });
+    return { data: data.data.map(mapAnime), pagination: data.pagination };
+  },
 };
 
 export const GENRE_IDS = {
