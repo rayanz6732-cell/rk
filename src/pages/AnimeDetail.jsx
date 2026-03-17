@@ -227,7 +227,32 @@ export default function AnimeDetail() {
         {/* Episodes */}
         {episodes?.data?.length > 0 && (
           <div className="mt-12">
-            <h2 className="text-xl font-bold text-white mb-4">Episodes</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="text-xl font-bold text-white">Episodes</h2>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const num = parseInt(epJump, 10);
+                  if (num > 0) window.location.href = `/Watch?id=${mal_id}&ep=${num}&title=${encodeURIComponent(anime.title)}`;
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="number"
+                  min="1"
+                  value={epJump}
+                  onChange={e => setEpJump(e.target.value)}
+                  placeholder="Jump to ep..."
+                  className="w-32 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold rounded-xl transition-colors"
+                >
+                  Go
+                </button>
+              </form>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {episodes.data.map((ep) => {
                 const thumb = ep.images?.jpg?.image_url || anime.cover_image;
