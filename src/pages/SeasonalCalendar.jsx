@@ -17,7 +17,7 @@ function parseBroadcastDay(broadcastStr) {
 }
 
 async function fetchSeasonalAnime() {
-  const res = await fetch(`${BASE}/seasons/now?limit=100`);
+  const res = await fetch(`${BASE}/top/anime?limit=250&type=TV`);
   if (!res.ok) return [];
   const json = await res.json();
   return (json.data || []).map(raw => ({
@@ -47,6 +47,10 @@ export default function SeasonalCalendar() {
     DAYS.forEach(d => { map[d] = []; });
     (allAnime || []).forEach(anime => {
       if (anime.broadcastDay) map[anime.broadcastDay].push(anime);
+    });
+    // Sort each day by score and take top 5
+    DAYS.forEach(d => {
+      map[d] = map[d].sort((a, b) => b.score - a.score).slice(0, 5);
     });
     return map;
   }, [allAnime]);
