@@ -85,6 +85,41 @@ export default function Home() {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 min-w-0">
+            {continueWatching.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  ▶️ Continue Watching
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {continueWatching.map((anime) => (
+                    <Link
+                      key={anime.mal_id}
+                      to={`/AnimeDetail?id=${anime.mal_id}`}
+                      className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
+                    >
+                      <div className="relative aspect-[3/4]">
+                        <img
+                          src={anime.cover_image}
+                          alt={anime.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-10 h-10 rounded-full bg-emerald-500/90 flex items-center justify-center shadow-lg">
+                            <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="px-2 py-2">
+                        <p className="text-xs text-zinc-400 line-clamp-2 group-hover:text-emerald-400 transition-colors">
+                          {anime.title}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             <AnimeSection
               title="Currently Airing This Season"
               anime={latestUpdates.slice(0, 12)}
