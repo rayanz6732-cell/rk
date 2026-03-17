@@ -47,8 +47,24 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AnimeDetail from './pages/AnimeDetail';
+import Home from './pages/Home';
+import Profile from './pages/Profile';
+import Search from './pages/Search';
+import SeasonalCalendar from './pages/SeasonalCalendar';
+import Watch from './pages/Watch';
 
-export const pagesConfig = {
-	Pages: {}
+
+export const PAGES = {
+    "AnimeDetail": AnimeDetail,
+    "Home": Home,
+    "Profile": Profile,
+    "Search": Search,
+    "SeasonalCalendar": SeasonalCalendar,
+    "Watch": Watch,
 }
 
+export const pagesConfig = {
+    mainPage: "Home",
+    Pages: PAGES,
+};

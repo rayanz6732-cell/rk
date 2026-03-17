@@ -23,17 +23,45 @@ export default function Layout() {
   useEffect(() => {
     const loadTheme = async () => {
       const user = await base44.auth.me();
-      if (user?.theme) {
-        const theme = THEMES.find(t => t.id === user.theme);
-        if (theme) {
-          const root = document.documentElement;
-          root.style.setProperty('--primary', theme.colors.primary);
-          root.style.setProperty('--ring', theme.colors.primary);
-        }
+      const themeId = user?.theme || 'default';
+      const theme = THEMES.find(t => t.id === themeId);
+      if (theme) {
+        applyTheme(theme);
       }
     };
     loadTheme();
   }, []);
+
+  const applyTheme = (theme) => {
+    const root = document.documentElement;
+    root.style.setProperty('--primary', theme.colors.primary);
+    root.style.setProperty('--ring', theme.colors.primary);
+    
+    // Inject CSS to override emerald colors with theme color
+    let styleEl = document.getElementById('theme-override-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'theme-override-style';
+      document.head.appendChild(styleEl);
+    }
+    
+    const hslColor = `hsl(${theme.colors.primary})`;
+    styleEl.textContent = `
+      .text-emerald-400 { color: ${hslColor} !important; }
+      .text-emerald-500 { color: ${hslColor} !important; }
+      .bg-emerald-500 { background-color: ${hslColor} !important; }
+      .bg-emerald-500\/20 { background-color: ${hslColor}20 !important; }
+      .bg-emerald-500\/10 { background-color: ${hslColor}10 !important; }
+      .border-emerald-500 { border-color: ${hslColor} !important; }
+      .border-emerald-500\/30 { border-color: ${hslColor}30 !important; }
+      .border-emerald-500\/40 { border-color: ${hslColor}40 !important; }
+      .border-emerald-500\/60 { border-color: ${hslColor}60 !important; }
+      .hover\:text-emerald-400:hover { color: ${hslColor} !important; }
+      .hover\:border-emerald-500\/40:hover { border-color: ${hslColor}40 !important; }
+      .hover\:border-emerald-500\/60:hover { border-color: ${hslColor}60 !important; }
+      .ring-emerald-500 { --tw-ring-color: ${hslColor} !important; }
+    `;
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">

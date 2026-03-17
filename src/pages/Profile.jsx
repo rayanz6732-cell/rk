@@ -70,15 +70,30 @@ export default function Profile() {
     root.style.setProperty('--primary', theme.colors.primary);
     root.style.setProperty('--ring', theme.colors.primary);
     
-    // Update CSS variable for tailwind
-    const style = document.createElement('style');
-    style.textContent = `
-      :root {
-        --primary: ${theme.colors.primary};
-        --ring: ${theme.colors.primary};
-      }
+    // Inject CSS to override emerald colors with theme color
+    let styleEl = document.getElementById('theme-override-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'theme-override-style';
+      document.head.appendChild(styleEl);
+    }
+    
+    const hslColor = `hsl(${theme.colors.primary})`;
+    styleEl.textContent = `
+      .text-emerald-400 { color: ${hslColor} !important; }
+      .text-emerald-500 { color: ${hslColor} !important; }
+      .bg-emerald-500 { background-color: ${hslColor} !important; }
+      .bg-emerald-500\/20 { background-color: ${hslColor}20 !important; }
+      .bg-emerald-500\/10 { background-color: ${hslColor}10 !important; }
+      .border-emerald-500 { border-color: ${hslColor} !important; }
+      .border-emerald-500\/30 { border-color: ${hslColor}30 !important; }
+      .border-emerald-500\/40 { border-color: ${hslColor}40 !important; }
+      .border-emerald-500\/60 { border-color: ${hslColor}60 !important; }
+      .hover\:text-emerald-400:hover { color: ${hslColor} !important; }
+      .hover\:border-emerald-500\/40:hover { border-color: ${hslColor}40 !important; }
+      .hover\:border-emerald-500\/60:hover { border-color: ${hslColor}60 !important; }
+      .ring-emerald-500 { --tw-ring-color: ${hslColor} !important; }
     `;
-    document.head.appendChild(style);
   };
 
   if (!user) return (
