@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Menu, X, ArrowLeft } from 'lucide-react';
+import { Search, Menu, X, ArrowLeft, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import DeleteAccountButton from './DeleteAccountButton';
 
@@ -84,6 +84,13 @@ export default function Navbar() {
                 <Search className="w-4 h-4 text-zinc-400" />
               </button>
             )}
+
+            <Link
+              to="/Profile"
+              className="w-9 h-9 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center transition-colors select-none"
+            >
+              <User className="w-4 h-4 text-zinc-400" />
+            </Link>
 
             {/* Mobile hamburger — hidden on mobile since we use bottom tab bar */}
             <button
