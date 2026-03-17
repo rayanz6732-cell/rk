@@ -45,7 +45,9 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  const embedUrl = `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}`;
+  const embedUrl = server === 'vidsrc'
+    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}`
+    : `https://www.2embed.cc/embedanime/${mal_id}/${ep}`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
