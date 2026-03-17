@@ -61,33 +61,35 @@ async function fetchAiringAnime() {
       if (data.data?.Page?.airingSchedules) {
         // Group by day of week, avoiding duplicates
         const grouped = {};
-        const seenAnimePerDay = {}; // Track which anime we've already added per day
+        const seenPerDay = {}; // Track title+time combinations to avoid duplicates
         
         for (let i = 0; i < 7; i++) {
           grouped[i] = [];
-          seenAnimePerDay[i] = new Set();
+          seenPerDay[i] = new Set();
         }
 
         data.data.Page.airingSchedules.forEach(schedule => {
           const airDate = new Date(schedule.airingAt * 1000);
           const dayOfWeek = airDate.getDay();
-          const mediaId = schedule.media.id;
+          const title = schedule.media.title.english || schedule.media.title.romaji;
+          const timeStr = airDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          });
+          const uniqueKey = `${title}|${timeStr}`; // Unique key for title + time combo
           
-          // Only add if we haven't seen this anime on this day yet
-          if (!seenAnimePerDay[dayOfWeek].has(mediaId)) {
-            seenAnimePerDay[dayOfWeek].add(mediaId);
+          // Only add if we haven't seen this title at this time on this day yet
+          if (!seenPerDay[dayOfWeek].has(uniqueKey)) {
+            seenPerDay[dayOfWeek].add(uniqueKey);
             
             grouped[dayOfWeek].push({
-              id: `${schedule.id}-${mediaId}`,
+              id: `${schedule.id}-${schedule.media.id}`,
               episode: schedule.episode,
               airingAt: schedule.airingAt,
-              title: schedule.media.title.english || schedule.media.title.romaji,
-              mediaId: mediaId,
-              time: airDate.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              }),
+              title: title,
+              mediaId: schedule.media.id,
+              time: timeStr,
             });
           }
         });
