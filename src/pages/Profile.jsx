@@ -70,7 +70,9 @@ export default function Profile() {
 
   const handleThemeChange = async (themeId) => {
     setSelectedTheme(themeId);
-    await base44.auth.updateMe({ theme: themeId });
+    if (user) {
+      await base44.auth.updateMe({ theme: themeId });
+    }
     
     const theme = THEMES.find(t => t.id === themeId);
     const root = document.documentElement;
