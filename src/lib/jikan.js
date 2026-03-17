@@ -12,6 +12,16 @@ async function jikanFetch(path, params = {}) {
   return res.json();
 }
 
+// Convert 24-hour time strings to 12-hour format within a broadcast string
+function convertTo12Hour(str) {
+  return str.replace(/(\d{2}):(\d{2})/g, (_, h, m) => {
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const h12 = hour % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
+  });
+}
+
 // Map raw Jikan anime object to our app's shape
 export function mapAnime(raw) {
   return {
