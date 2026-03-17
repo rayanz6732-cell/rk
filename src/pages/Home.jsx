@@ -128,7 +128,6 @@ export default function Home() {
             <AnimeSection
               title="Currently Airing This Season"
               anime={latestUpdates.slice(0, 12)}
-              icon="📺"
               viewAllLink="/Search?filter=season"
             />
             <AnimeSection
