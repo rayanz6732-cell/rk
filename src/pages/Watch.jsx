@@ -46,7 +46,7 @@ export default function Watch() {
   const embedUrl = `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}`;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 md:px-8 py-3 border-b border-zinc-900 flex-shrink-0 gap-3">
         <Link
