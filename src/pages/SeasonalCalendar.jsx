@@ -17,19 +17,43 @@ function parseBroadcastDay(broadcastStr) {
 }
 
 async function fetchSeasonalAnime() {
-  const res = await fetch(`${BASE}/top/anime?limit=250&type=TV`);
-  if (!res.ok) return [];
-  const json = await res.json();
-  return (json.data || []).map(raw => ({
-    mal_id: raw.mal_id,
-    title: raw.title_english || raw.title,
-    cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
-    score: raw.score || 0,
-    episodes: raw.episodes || 0,
-    broadcast: raw.broadcast?.string || '',
-    broadcastDay: parseBroadcastDay(raw.broadcast?.string),
-    type: raw.type || 'TV',
-  }));
+  try {
+    const res = await fetch(`${BASE}/seasons/now?limit=50&page=1`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    let allAnime = (json.data || []).map(raw => ({
+      mal_id: raw.mal_id,
+      title: raw.title_english || raw.title,
+      cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
+      score: raw.score || 0,
+      episodes: raw.episodes || 0,
+      broadcast: raw.broadcast?.string || '',
+      broadcastDay: parseBroadcastDay(raw.broadcast?.string),
+      type: raw.type || 'TV',
+    }));
+    
+    // If we don't have enough anime, fetch next page
+    if (json.pagination?.has_next_page) {
+      const res2 = await fetch(`${BASE}/seasons/now?limit=50&page=2`);
+      if (res2.ok) {
+        const json2 = await res2.json();
+        allAnime = allAnime.concat((json2.data || []).map(raw => ({
+          mal_id: raw.mal_id,
+          title: raw.title_english || raw.title,
+          cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
+          score: raw.score || 0,
+          episodes: raw.episodes || 0,
+          broadcast: raw.broadcast?.string || '',
+          broadcastDay: parseBroadcastDay(raw.broadcast?.string),
+          type: raw.type || 'TV',
+        })));
+      }
+    }
+    
+    return allAnime;
+  } catch (e) {
+    return [];
+  }
 }
 
 export default function SeasonalCalendar() {
