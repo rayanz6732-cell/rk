@@ -7,10 +7,31 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 const DAY_SHORT = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 async function fetchAiringAnime() {
+  // Get current time and week boundaries
+  const now = new Date();
+  const currentDay = now.getDay();
+  
+  // Start of current week (Sunday)
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - currentDay);
+  weekStart.setHours(0, 0, 0, 0);
+  
+  // End of current week (Saturday)
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  
+  const startTimestamp = Math.floor(weekStart.getTime() / 1000);
+  const endTimestamp = Math.floor(weekEnd.getTime() / 1000);
+
   const query = `
     query {
-      Page(perPage: 50) {
-        airingSchedules(sort: TIME, notYetAired: false) {
+      Page(perPage: 100) {
+        airingSchedules(
+          sort: TIME
+          airingAt_greater: ${startTimestamp}
+          airingAt_lesser: ${endTimestamp}
+        ) {
           id
           episode
           airingAt
@@ -19,9 +40,6 @@ async function fetchAiringAnime() {
             title {
               english
               romaji
-            }
-            coverImage {
-              large
             }
           }
         }
@@ -41,29 +59,37 @@ async function fetchAiringAnime() {
     if (res.ok) {
       const data = await res.json();
       if (data.data?.Page?.airingSchedules) {
-        // Group by day of week
+        // Group by day of week, avoiding duplicates
         const grouped = {};
+        const seenAnimePerDay = {}; // Track which anime we've already added per day
+        
         for (let i = 0; i < 7; i++) {
           grouped[i] = [];
+          seenAnimePerDay[i] = new Set();
         }
 
         data.data.Page.airingSchedules.forEach(schedule => {
           const airDate = new Date(schedule.airingAt * 1000);
           const dayOfWeek = airDate.getDay();
+          const mediaId = schedule.media.id;
           
-          grouped[dayOfWeek].push({
-            id: schedule.id,
-            episode: schedule.episode,
-            airingAt: schedule.airingAt,
-            title: schedule.media.title.english || schedule.media.title.romaji,
-            mediaId: schedule.media.id,
-            cover: schedule.media.coverImage?.large,
-            time: airDate.toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-            }),
-          });
+          // Only add if we haven't seen this anime on this day yet
+          if (!seenAnimePerDay[dayOfWeek].has(mediaId)) {
+            seenAnimePerDay[dayOfWeek].add(mediaId);
+            
+            grouped[dayOfWeek].push({
+              id: `${schedule.id}-${mediaId}`,
+              episode: schedule.episode,
+              airingAt: schedule.airingAt,
+              title: schedule.media.title.english || schedule.media.title.romaji,
+              mediaId: mediaId,
+              time: airDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              }),
+            });
+          }
         });
 
         // Sort each day by time
