@@ -158,39 +158,12 @@ export default function SeasonalCalendar() {
           </button>
         </div>
 
-        {/* Anime list */}
+        {/* Coming soon */}
         <div>
           <h2 className="text-xl font-bold text-white mb-4">{DAY_NAMES[selectedDay]}</h2>
-
-          {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-            </div>
-          ) : !dayAnime.length ? (
-            <div className="text-center py-16 text-zinc-600">
-              No anime airing on {DAY_NAMES[selectedDay]}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {dayAnime.map((anime) => (
-                <Link
-                  key={anime.id}
-                  to={`/AnimeDetail?id=${anime.mediaId}`}
-                  className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-zinc-800/50 transition-colors group"
-                >
-                  <span className="text-zinc-500 text-sm font-medium w-12 flex-shrink-0">
-                    {anime.time}
-                  </span>
-                  <span className="text-zinc-300 group-hover:text-emerald-400 transition-colors flex-1 line-clamp-1">
-                    {anime.title}
-                  </span>
-                  <span className="text-zinc-600 text-sm font-medium flex-shrink-0">
-                    EP {anime.episode}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="text-center py-16">
+            <p className="text-xl font-semibold text-emerald-400">Coming Soon!!</p>
+          </div>
         </div>
       </div>
     </div>
