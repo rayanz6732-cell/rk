@@ -192,7 +192,7 @@ export default function Profile() {
         </div>
 
         {/* Streak info */}
-        {(user.watch_streak || 0) > 0 && (
+        {user && (user.watch_streak || 0) > 0 && (
           <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 flex items-center gap-3">
             <Flame className="w-8 h-8 text-orange-400 flex-shrink-0" />
             <div>
