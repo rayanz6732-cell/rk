@@ -18,6 +18,7 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
+  const iframeRef = useRef(null);
 
   useEffect(() => {
     JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
