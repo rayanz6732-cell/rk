@@ -7,6 +7,7 @@ import HeroBanner from '../components/anime/HeroBanner';
 import AnimeSection from '../components/anime/AnimeSection';
 import TrendingSidebar from '../components/anime/TrendingSidebar';
 import { Loader2, Play } from 'lucide-react';
+import SignupSection from '../components/anime/SignupSection';
 
 export default function Home() {
   const [continueWatching, setContinueWatching] = useState([]);
