@@ -54,6 +54,7 @@ export default function Navbar() {
             <Link to="/Search" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">Browse</Link>
             <Link to="/Search?filter=trending" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">Trending</Link>
             <Link to="/Search?filter=new" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">New Releases</Link>
+            <Link to="/SeasonalCalendar" className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium select-none">📅 Schedule</Link>
           </div>
 
           {/* Search + Mobile Toggle */}

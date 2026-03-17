@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { BADGES } from '../lib/streakAndBadges';
-import { Flame, Tv, Award, User } from 'lucide-react';
+import { Flame, Tv, Award, User, Clock, Calendar } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -38,8 +39,17 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Quick links */}
+        <Link to="/SeasonalCalendar" className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 rounded-2xl p-4 transition-all group">
+          <Calendar className="w-6 h-6 text-emerald-400" />
+          <div>
+            <p className="text-white font-bold text-sm group-hover:text-emerald-400 transition-colors">Seasonal Calendar</p>
+            <p className="text-zinc-600 text-xs">This season's airing schedule</p>
+          </div>
+        </Link>
+
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
             <Flame className="w-6 h-6 text-orange-400 mx-auto mb-1" />
             <p className="text-2xl font-black text-white">{user.watch_streak || 0}</p>
@@ -54,6 +64,14 @@ export default function Profile() {
             <Award className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
             <p className="text-2xl font-black text-white">{earnedBadges.length}</p>
             <p className="text-xs text-zinc-500">Badges</p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
+            <Clock className="w-6 h-6 text-blue-400 mx-auto mb-1" />
+            <p className="text-2xl font-black text-white">
+              {Math.floor((user.total_watch_minutes || 0) / 60)}
+              <span className="text-sm font-normal text-zinc-500">h</span>
+            </p>
+            <p className="text-xs text-zinc-500">Watch Time</p>
           </div>
         </div>
 
