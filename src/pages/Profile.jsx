@@ -51,7 +51,7 @@ const THEMES = [
 
 export default function Profile() {
   const [user, setUser] = useState(null);
-  const [selectedTheme, setSelectedTheme] = useState('default');
+  const [selectedTheme, setSelectedTheme] = useState('cherry');
   const [showAppearance, setShowAppearance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -59,7 +59,7 @@ export default function Profile() {
     base44.auth.me()
       .then(u => {
         setUser(u);
-        setSelectedTheme(u?.theme || 'default');
+        setSelectedTheme(u?.theme || 'cherry');
       })
       .catch(() => {
         // User not signed in, show guest profile
