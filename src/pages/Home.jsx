@@ -133,13 +133,11 @@ export default function Home() {
             <AnimeSection
               title="Top Rated Right Now"
               anime={trending.slice(0, 12)}
-              icon="⭐"
               viewAllLink="/Search?filter=top"
             />
             <AnimeSection
               title="Most Popular"
               anime={popular.slice(0, 12)}
-              icon="🔥"
               viewAllLink="/Search?filter=popular"
             />
             {upcomingList.length > 0 && (
