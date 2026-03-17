@@ -1,73 +1,45 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Star, Tv, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_SHORT = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 const BASE = 'https://api.jikan.moe/v4';
-const DAY_MAP = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
 
 async function fetchDayAnime(day) {
   try {
-    // Fetch currently airing anime and filter by day
     const res = await fetch(`${BASE}/anime?status=airing&order_by=score&sort=desc&limit=50`);
     if (res.ok) {
       const json = await res.json();
       const dayLower = day.toLowerCase();
       
       const anime = (json.data || [])
-        .filter(raw => {
-          const schedule = raw.broadcast?.day_of_week?.toLowerCase();
-          return schedule === dayLower;
-        })
+        .filter(raw => raw.broadcast?.day_of_week?.toLowerCase() === dayLower)
         .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 5)
         .map(raw => ({
           mal_id: raw.mal_id,
           title: raw.title_english || raw.title,
-          cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
-          score: raw.score || 0,
           episodes: raw.episodes || 0,
-          type: raw.type || 'TV',
+          time: raw.broadcast?.time || '--:--',
         }));
       
-      if (anime.length > 0) return anime;
+      return anime;
     }
   } catch (e) {
-    console.error('Jikan error:', e);
+    console.error('Error:', e);
   }
-
-  // Fallback: fetch top airing anime regardless of schedule
-  try {
-    const res = await fetch(`${BASE}/anime?status=airing&order_by=score&sort=desc&limit=5`);
-    if (res.ok) {
-      const json = await res.json();
-      return (json.data || []).map(raw => ({
-        mal_id: raw.mal_id,
-        title: raw.title_english || raw.title,
-        cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
-        score: raw.score || 0,
-        episodes: raw.episodes || 0,
-        type: raw.type || 'TV',
-      }));
-    }
-  } catch (e) {
-    console.error('Fallback error:', e);
-  }
-
   return [];
 }
 
 export default function SeasonalCalendar() {
   const today = new Date().getDay();
-  const todayIndex = today === 0 ? 6 : today - 1; // Convert JS day (0=Sun) to our index (6=Sun)
+  const todayIndex = today === 0 ? 6 : today - 1;
   const selectedDayName = DAY_NAMES[todayIndex];
-  const [selectedDay, setSelectedDay] = useState(selectedDayName);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
 
-  // Fetch all days in parallel
   const { data: allDays = {}, isLoading } = useQuery({
     queryKey: ['all-schedules'],
     queryFn: async () => {
@@ -81,83 +53,77 @@ export default function SeasonalCalendar() {
     staleTime: 1000 * 60 * 30,
   });
 
-  const dayAnime = allDays[selectedDay] || [];
+  const dayAnime = allDays[DAY_NAMES[selectedDayIndex]] || [];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-white mb-1">Airing Schedule</h1>
-          <p className="text-zinc-500 text-sm">Top 5 anime airing each day of the week</p>
-        </div>
+      <div className="max-w-2xl mx-auto">
+        {/* Day selector */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => setSelectedDayIndex((selectedDayIndex - 1 + 7) % 7)}
+            className="p-2 text-zinc-500 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
 
-        {/* Day tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-8">
-          {DAY_NAMES.map((day, i) => {
-            const isToday = day === selectedDayName;
-            const isActive = selectedDay === day;
-            const count = allDays[day]?.length || 0;
-            return (
-              <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={`flex-shrink-0 flex flex-col items-center px-4 py-3 rounded-2xl border transition-all ${
-                  isActive
-                    ? 'bg-emerald-500 border-emerald-500 text-black'
-                    : isToday
-                    ? 'bg-zinc-800 border-emerald-500/40 text-white'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600'
-                }`}
-              >
-                <span className="text-xs font-bold">{DAY_SHORT[i]}</span>
-                <span className={`text-lg font-black leading-tight ${isActive ? 'text-black' : 'text-white'}`}>
-                  {isLoading ? '—' : count}
-                </span>
-                {isToday && !isActive && <span className="text-[9px] text-emerald-400 font-bold mt-0.5">TODAY</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Anime grid */}
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-lg font-bold text-white">{selectedDay}</h2>
-            {selectedDay === selectedDayName && (
-              <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Today</span>
-            )}
-            {!isLoading && <span className="text-zinc-600 text-sm">{dayAnime.length} anime</span>}
+          <div className="flex gap-2">
+            {DAY_NAMES.map((day, i) => {
+              const isActive = selectedDayIndex === i;
+              const count = allDays[day]?.length || 0;
+              
+              // Get date for this day
+              const date = new Date();
+              const dayDiff = i - todayIndex;
+              date.setDate(date.getDate() + dayDiff);
+              const dateNum = date.getDate();
+              
+              return (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDayIndex(i)}
+                  className={`flex flex-col items-center px-3 py-2 rounded-lg transition-all ${
+                    isActive
+                      ? 'bg-emerald-500 text-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <span className="text-xs font-bold">{DAY_SHORT[i]}</span>
+                  <span className="text-lg font-black">{dateNum}</span>
+                </button>
+              );
+            })}
           </div>
 
+          <button
+            onClick={() => setSelectedDayIndex((selectedDayIndex + 1) % 7)}
+            className="p-2 text-zinc-500 hover:text-white transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Anime list */}
+        <div>
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
             </div>
           ) : !dayAnime.length ? (
-            <div className="text-center py-16 text-zinc-600">No anime scheduled for {selectedDay}</div>
+            <div className="text-center py-16 text-zinc-600">No anime scheduled for {DAY_NAMES[selectedDayIndex]}</div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {dayAnime.map(anime => (
-                <Link key={anime.mal_id} to={`/AnimeDetail?id=${anime.mal_id}`} className="group block">
-                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 group-hover:border-emerald-500/50 transition-all mb-2">
-                    {anime.cover_image
-                      ? <img src={anime.cover_image} alt={anime.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Tv className="w-8 h-8 text-zinc-600" /></div>
-                    }
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    {anime.score > 0 && (
-                      <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
-                        <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                        <span className="text-[10px] text-yellow-300 font-bold">{anime.score}</span>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs font-medium text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors leading-tight">
+            <div className="space-y-2">
+              {dayAnime.map((anime, idx) => (
+                <Link
+                  key={`${anime.mal_id}-${idx}`}
+                  to={`/AnimeDetail?id=${anime.mal_id}`}
+                  className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-zinc-800/50 transition-colors group"
+                >
+                  <span className="text-zinc-500 text-sm font-medium w-12 flex-shrink-0">{anime.time}</span>
+                  <span className="text-zinc-300 group-hover:text-emerald-400 transition-colors flex-1 line-clamp-1">
                     {anime.title}
-                  </p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">
-                    {anime.episodes > 0 ? `${anime.episodes} eps` : 'TBA'}
-                  </p>
+                  </span>
+                  <span className="text-zinc-600 text-sm font-medium flex-shrink-0">EP {anime.episodes}</span>
                 </Link>
               ))}
             </div>
