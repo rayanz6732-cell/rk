@@ -1,100 +1,67 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Star, Tv, Loader2 } from 'lucide-react';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const BASE = 'https://api.jikan.moe/v4';
 
-function parseBroadcastDay(broadcastStr) {
-  if (!broadcastStr) return null;
-  for (const day of DAYS) {
-    if (broadcastStr.toLowerCase().includes(day.toLowerCase())) return day;
-  }
-  return null;
-}
-
-async function fetchSeasonalAnime() {
-  try {
-    const res = await fetch(`${BASE}/seasons/now?limit=50&page=1`);
-    if (!res.ok) return [];
-    const json = await res.json();
-    let allAnime = (json.data || []).map(raw => ({
+async function fetchDayAnime(day) {
+  const res = await fetch(`${BASE}/schedules?filter=${day}&limit=25`);
+  if (!res.ok) return [];
+  const json = await res.json();
+  return (json.data || [])
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 5)
+    .map(raw => ({
       mal_id: raw.mal_id,
       title: raw.title_english || raw.title,
       cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
       score: raw.score || 0,
       episodes: raw.episodes || 0,
-      broadcast: raw.broadcast?.string || '',
-      broadcastDay: parseBroadcastDay(raw.broadcast?.string),
       type: raw.type || 'TV',
     }));
-    
-    // If we don't have enough anime, fetch next page
-    if (json.pagination?.has_next_page) {
-      const res2 = await fetch(`${BASE}/seasons/now?limit=50&page=2`);
-      if (res2.ok) {
-        const json2 = await res2.json();
-        allAnime = allAnime.concat((json2.data || []).map(raw => ({
-          mal_id: raw.mal_id,
-          title: raw.title_english || raw.title,
-          cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
-          score: raw.score || 0,
-          episodes: raw.episodes || 0,
-          broadcast: raw.broadcast?.string || '',
-          broadcastDay: parseBroadcastDay(raw.broadcast?.string),
-          type: raw.type || 'TV',
-        })));
-      }
-    }
-    
-    return allAnime;
-  } catch (e) {
-    return [];
-  }
 }
 
 export default function SeasonalCalendar() {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const [selectedDay, setSelectedDay] = useState(today);
+  const today = new Date().getDay();
+  const todayIndex = today === 0 ? 6 : today - 1; // Convert JS day (0=Sun) to our index (6=Sun)
+  const selectedDayName = DAY_NAMES[todayIndex];
+  const [selectedDay, setSelectedDay] = useState(selectedDayName);
 
-  const { data: allAnime, isLoading } = useQuery({
-    queryKey: ['seasonal-schedule'],
-    queryFn: fetchSeasonalAnime,
+  // Fetch all days in parallel
+  const { data: allDays = {}, isLoading } = useQuery({
+    queryKey: ['all-schedules'],
+    queryFn: async () => {
+      const results = await Promise.all(DAYS.map(d => fetchDayAnime(d)));
+      const map = {};
+      DAYS.forEach((day, i) => {
+        map[DAY_NAMES[i]] = results[i];
+      });
+      return map;
+    },
     staleTime: 1000 * 60 * 30,
   });
 
-  const byDay = useMemo(() => {
-    const map = {};
-    DAYS.forEach(d => { map[d] = []; });
-    (allAnime || []).forEach(anime => {
-      if (anime.broadcastDay) map[anime.broadcastDay].push(anime);
-    });
-    // Sort each day by score and take top 5
-    DAYS.forEach(d => {
-      map[d] = map[d].sort((a, b) => b.score - a.score).slice(0, 5);
-    });
-    return map;
-  }, [allAnime]);
-
-  const dayAnime = byDay[selectedDay] || [];
+  const dayAnime = allDays[selectedDay] || [];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white mb-1">Airing Schedule</h1>
-          <p className="text-zinc-500 text-sm">Currently airing anime by day of the week</p>
+          <p className="text-zinc-500 text-sm">Top 5 anime airing each day of the week</p>
         </div>
 
         {/* Day tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-8">
-          {DAYS.map((day, i) => {
-            const count = byDay[day]?.length ?? '—';
-            const isToday = day === today;
+          {DAY_NAMES.map((day, i) => {
+            const isToday = day === selectedDayName;
             const isActive = selectedDay === day;
+            const count = allDays[day]?.length || 0;
             return (
               <button
                 key={day}
@@ -108,7 +75,9 @@ export default function SeasonalCalendar() {
                 }`}
               >
                 <span className="text-xs font-bold">{DAY_SHORT[i]}</span>
-                <span className={`text-lg font-black leading-tight ${isActive ? 'text-black' : 'text-white'}`}>{isLoading ? '—' : count}</span>
+                <span className={`text-lg font-black leading-tight ${isActive ? 'text-black' : 'text-white'}`}>
+                  {isLoading ? '—' : count}
+                </span>
                 {isToday && !isActive && <span className="text-[9px] text-emerald-400 font-bold mt-0.5">TODAY</span>}
               </button>
             );
@@ -119,7 +88,7 @@ export default function SeasonalCalendar() {
         <div>
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-lg font-bold text-white">{selectedDay}</h2>
-            {selectedDay === today && (
+            {selectedDay === selectedDayName && (
               <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Today</span>
             )}
             {!isLoading && <span className="text-zinc-600 text-sm">{dayAnime.length} anime</span>}
