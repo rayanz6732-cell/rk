@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Mic, Captions, Play } from 'lucide-react';
 import { JikanAPI } from '../lib/jikan';
 import CommentsSection from '../components/anime/CommentsSection';
+import { recordWatchActivity } from '../lib/streakAndBadges';
 
 export default function Watch() {
   const [searchParams] = useSearchParams();

@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import AnimeDetail from './pages/AnimeDetail';
 import Watch from './pages/Watch';
+import Profile from './pages/Profile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
         <Route path="/Search" element={<Search />} />
         <Route path="/AnimeDetail" element={<AnimeDetail />} />
         <Route path="/Watch" element={<Watch />} />
+        <Route path="/Profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
