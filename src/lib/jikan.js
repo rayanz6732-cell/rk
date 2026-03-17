@@ -38,7 +38,7 @@ export function mapAnime(raw) {
     trailer_url: raw.trailer?.embed_url || '',
     studios: (raw.studios || []).map(s => s.name),
     season: raw.season || '',
-    broadcast: raw.broadcast?.string || '',
+    broadcast: convertTo12Hour(raw.broadcast?.string || ''),
     duration: raw.duration || '',
     source: raw.source || '',
     is_airing: raw.airing || false,
