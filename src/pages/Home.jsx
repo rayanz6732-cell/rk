@@ -8,6 +8,27 @@ import TrendingSidebar from '../components/anime/TrendingSidebar';
 import { Loader2, Play } from 'lucide-react';
 
 export default function Home() {
+  const [continueWatching, setContinueWatching] = useState([]);
+
+  useEffect(() => {
+    // Get all watch history from localStorage
+    const allKeys = Object.keys(localStorage).filter(key => key.startsWith('rk_progress_'));
+    const watching = allKeys.map(key => {
+      const [, mal_id, epStr] = key.match(/rk_progress_(\d+)_ep(\d+)/) || [];
+      return { mal_id: parseInt(mal_id), episode: parseInt(epStr) };
+    }).filter(item => item.mal_id);
+
+    // Get unique anime IDs and fetch their details
+    const uniqueIds = [...new Set(watching.map(w => w.mal_id))].slice(0, 6);
+    if (uniqueIds.length > 0) {
+      Promise.all(
+        uniqueIds.map(id => JikanAPI.getById(id))
+      ).then(results => {
+        setContinueWatching(results.filter(Boolean));
+      });
+    }
+  }, []);
+
   const { data: currentSeason, isLoading: loadingSeason } = useQuery({
     queryKey: ['current-season'],
     queryFn: () => JikanAPI.getCurrentSeason(),
