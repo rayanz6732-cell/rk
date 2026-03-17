@@ -141,6 +141,8 @@ export default function Watch() {
                 </div>
               );
             })()}
+
+            <CommentsSection mal_id={mal_id} episode={ep} />
           </div>
         </div>
 
