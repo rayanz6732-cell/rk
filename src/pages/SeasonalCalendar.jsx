@@ -7,29 +7,52 @@ const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_SHORT = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
-const BASE = 'https://api.jikan.moe/v4';
+// Map day names to animeschedule.net format
+const DAY_MAP_SCHEDULE = {
+  monday: 'monday',
+  tuesday: 'tuesday',
+  wednesday: 'wednesday',
+  thursday: 'thursday',
+  friday: 'friday',
+  saturday: 'saturday',
+  sunday: 'sunday'
+};
 
 async function fetchDayAnime(day) {
   try {
-    const res = await fetch(`${BASE}/anime?status=airing&order_by=score&sort=desc&limit=50`);
+    // Get current year and week
+    const now = new Date();
+    const year = now.getFullYear();
+    // Calculate week number
+    const firstDay = new Date(year, 0, 1);
+    const lastDay = new Date(year, 11, 31);
+    const dayCount = (lastDay - firstDay) / 86400000;
+    const week = Math.ceil((now.getDay() + 1 + Math.floor(dayCount / 7)) / 7);
+    
+    const scheduleDay = DAY_MAP_SCHEDULE[day.toLowerCase()];
+    const res = await fetch(`https://animeschedule.net/api/v3/timetables/${year}/${week}?hide_airingplan=true`);
+    
     if (res.ok) {
       const json = await res.json();
-      const dayLower = day.toLowerCase();
+      const dayData = json[scheduleDay] || [];
       
-      const anime = (json.data || [])
-        .filter(raw => raw.broadcast?.day_of_week?.toLowerCase() === dayLower)
-        .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .map(raw => ({
-          mal_id: raw.mal_id,
-          title: raw.title_english || raw.title,
-          episodes: raw.episodes || 0,
-          time: raw.broadcast?.time || '--:--',
-        }));
+      const anime = dayData
+        .map(item => ({
+          mal_id: item.anime_id || item.id,
+          title: item.anime_title || item.title || 'Unknown',
+          episodes: item.episode_number || 0,
+          time: item.time || '--:--',
+        }))
+        .sort((a, b) => {
+          const timeA = a.time === '--:--' ? '23:59' : a.time;
+          const timeB = b.time === '--:--' ? '23:59' : b.time;
+          return timeA.localeCompare(timeB);
+        });
       
       return anime;
     }
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error fetching from animeschedule.net:', e);
   }
   return [];
 }
