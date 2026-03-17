@@ -1,15 +1,73 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { BADGES } from '../lib/streakAndBadges';
-import { Flame, Tv, Award, User, Clock, Calendar } from 'lucide-react';
+import { Flame, Tv, Award, User, Clock, Calendar, Palette } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+const THEMES = [
+  {
+    id: 'default',
+    name: 'Default',
+    desc: 'Pure white clean aesthetic',
+    gradient: 'from-gray-300 to-gray-400',
+    colors: { primary: '142 71% 45%', bg: '0 0% 4%' }
+  },
+  {
+    id: 'cherry',
+    name: 'Cherry Blossom',
+    desc: 'Soft pink tones inspired by sakura',
+    gradient: 'from-pink-400 to-purple-400',
+    colors: { primary: '340 82% 52%', bg: '0 0% 4%' }
+  },
+  {
+    id: 'neon',
+    name: 'Neon Tokyo',
+    desc: 'Electric neon cyberpunk vibes',
+    gradient: 'from-purple-500 to-cyan-400',
+    colors: { primary: '280 90% 50%', bg: '0 0% 2%' }
+  },
+  {
+    id: 'aurora',
+    name: 'Aurora Borealis',
+    desc: 'Northern lights dancing colors',
+    gradient: 'from-green-400 to-cyan-500',
+    colors: { primary: '162 73% 46%', bg: '0 0% 4%' }
+  },
+  {
+    id: 'ocean',
+    name: 'Deep Ocean',
+    desc: 'Mysterious underwater depths',
+    gradient: 'from-blue-500 to-blue-600',
+    colors: { primary: '217 91% 60%', bg: '0 0% 3%' }
+  },
+  {
+    id: 'sunset',
+    name: 'Golden Sunset',
+    desc: 'Warm sunset dreamy palette',
+    gradient: 'from-yellow-400 via-orange-500 to-red-500',
+    colors: { primary: '39 89% 49%', bg: '0 0% 4%' }
+  }
+];
 
 export default function Profile() {
   const [user, setUser] = useState(null);
+  const [selectedTheme, setSelectedTheme] = useState('default');
+  const [showAppearance, setShowAppearance] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(setUser);
+    base44.auth.me().then(u => {
+      setUser(u);
+      setSelectedTheme(u.theme || 'default');
+    });
   }, []);
+
+  const handleThemeChange = async (themeId) => {
+    setSelectedTheme(themeId);
+    await base44.auth.updateMe({ theme: themeId });
+    
+    const theme = THEMES.find(t => t.id === themeId);
+    document.documentElement.style.setProperty('--primary', theme.colors.primary);
+  };
 
   if (!user) return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -107,7 +165,52 @@ export default function Profile() {
           </div>
         )}
 
-      </div>
-    </div>
-  );
-}
+        {/* Appearance Button */}
+        <button
+          onClick={() => setShowAppearance(!showAppearance)}
+          className="flex items-center gap-3 w-full bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 rounded-2xl p-4 transition-all group"
+        >
+          <Palette className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+          <div className="text-left">
+            <p className="text-white font-bold text-sm group-hover:text-emerald-400 transition-colors">Appearance</p>
+            <p className="text-zinc-600 text-xs">Customize your theme</p>
+          </div>
+        </button>
+
+        {/* Appearance Section */}
+        {showAppearance && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+            <h2 className="text-lg font-bold text-white mb-4">Choose Theme</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {THEMES.map(theme => (
+                <button
+                  key={theme.id}
+                  onClick={() => handleThemeChange(theme.id)}
+                  className={`relative rounded-xl overflow-hidden transition-all ${
+                    selectedTheme === theme.id ? 'ring-2 ring-emerald-500 scale-105' : 'hover:scale-102'
+                  }`}
+                >
+                  <div className={`h-24 bg-gradient-to-r ${theme.gradient}`} />
+                  <div className="bg-zinc-800 px-3 py-2">
+                    <p className="text-xs font-bold text-white text-left">{theme.name}</p>
+                    <p className="text-[10px] text-zinc-500 text-left">{theme.desc}</p>
+                  </div>
+                  {selectedTheme === theme.id && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        </div>
+        </div>
+        );
+        }
