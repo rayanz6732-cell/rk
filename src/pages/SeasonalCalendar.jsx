@@ -10,7 +10,7 @@ const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const BASE = 'https://api.jikan.moe/v4';
 
 async function fetchDayAnime(day) {
-  const res = await fetch(`${BASE}/schedules?filter=${day}&limit=25`);
+  const res = await fetch(`${BASE}/schedules?filter=${day}&limit=50`);
   if (!res.ok) return [];
   const json = await res.json();
   return (json.data || [])
