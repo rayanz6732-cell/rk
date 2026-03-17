@@ -215,13 +215,15 @@ export default function AnimeDetail() {
             )}
 
             {/* CTA */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 mb-4">
               <Link to={`/Watch?id=${mal_id}&ep=1&title=${encodeURIComponent(anime.title)}`}>
                 <Button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-8 py-5 rounded-xl gap-2 shadow-lg shadow-emerald-500/20">
                   <Play className="w-4 h-4 fill-black" /> Watch Now
                 </Button>
               </Link>
             </div>
+
+            <StarRating mal_id={mal_id} animeTitle={anime.title} />
           </div>
         </div>
 
