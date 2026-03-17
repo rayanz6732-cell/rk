@@ -13,6 +13,7 @@ export default function Watch() {
   const storageKey = `rk_progress_${mal_id}_ep${ep}`;
 
   const [audioType, setAudioType] = useState('sub');
+  const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
 
