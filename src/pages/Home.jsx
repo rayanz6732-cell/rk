@@ -93,7 +93,7 @@ export default function Home() {
             {continueWatching.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  ▶️ Continue Watching
+                  Continue Watching
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {continueWatching.map((anime) => (
