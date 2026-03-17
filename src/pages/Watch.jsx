@@ -124,21 +124,14 @@ export default function Watch() {
                           to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
                           className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
                         >
-                          <div className="relative aspect-video">
-                            <img src={thumb || coverThumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="w-9 h-9 rounded-full bg-emerald-500/90 flex items-center justify-center">
-                                <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
-                              </div>
+                            <div className="px-3 py-3 flex items-center gap-3">
+                            <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.mal_id}</span>
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-medium text-zinc-500 mb-0.5">Episode {e.mal_id}</p>
+                              <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                                {e.title || `Episode ${e.mal_id}`}
+                              </p>
                             </div>
-                            <div className="absolute bottom-1.5 right-2 text-white font-black text-base drop-shadow-lg">{e.mal_id}</div>
-                          </div>
-                          <div className="px-2 py-1.5">
-                            <p className="text-[11px] font-medium text-zinc-500 mb-0.5">Episode {e.mal_id}</p>
-                            <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">
-                              {e.title || `Episode ${e.mal_id}`}
-                            </p>
                           </div>
                         </Link>
                       );
