@@ -1,24 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, SkipForward, Mic, Captions, Server, Loader2, Play } from 'lucide-react';
+import { ArrowLeft, Mic, Captions, Play } from 'lucide-react';
 import { JikanAPI } from '../lib/jikan';
-
-const INTRO_DURATION = 90;
-
-async function getAnilistId(malId) {
-  try {
-    const query = `query ($idMal: Int) { Media(idMal: $idMal, type: ANIME) { id } }`;
-    const res = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { idMal: parseInt(malId) } }),
-    });
-    const data = await res.json();
-    return data?.data?.Media?.id || null;
-  } catch {
-    return null;
-  }
-}
 
 export default function Watch() {
   const [searchParams] = useSearchParams();
@@ -34,16 +17,6 @@ export default function Watch() {
 
   useEffect(() => {
     JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
-  }, [mal_id]);
-
-  const isDub = audioType === 'dub';
-
-  useEffect(() => {
-    setLoadingAnilist(true);
-    getAnilistId(mal_id).then(id => {
-      setAnilistId(id);
-      setLoadingAnilist(false);
-    });
   }, [mal_id]);
 
   useEffect(() => {
@@ -70,61 +43,7 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  useEffect(() => {
-    if (!showSkipIntro) return;
-    const timer = setTimeout(() => setShowSkipIntro(false), 120000);
-    return () => clearTimeout(timer);
-  }, [showSkipIntro]);
-
-  const al = anilistId;
-
-  // Confirmed working sources only
-  const allSources = [
-    // ✅ CONFIRMED WORKING: vidsrc.cc uses MAL IDs directly — no conversion needed
-    {
-      name: 'VidSrc CC',
-      url: `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}`,
-      needsAL: false,
-    },
-    {
-      name: 'VidSrc CC v3',
-      url: `https://vidsrc.cc/v3/embed/anime/${mal_id}/${ep}/${audioType}`,
-      needsAL: false,
-    },
-    // VidPlus — shows UI but may need time to load (AniList based)
-    {
-      name: 'VidPlus',
-      url: al ? `https://player.vidplus.to/embed/anime/${al}/${ep}?dub=${isDub}&primarycolor=10b981` : null,
-      needsAL: true,
-    },
-    // VidSrc ICU — AniList based
-    {
-      name: 'VidSrc ICU',
-      url: al ? `https://vidsrc.icu/embed/anime/${al}/${ep}/${isDub ? 1 : 0}` : null,
-      needsAL: true,
-    },
-    // VidLink — MAL based, sometimes works
-    {
-      name: 'VidLink',
-      url: `https://vidlink.pro/anime/${mal_id}/${ep}/${audioType}?fallback=true`,
-      needsAL: false,
-    },
-  ];
-
-  const availableSources = allSources.filter(s => !s.needsAL || (!loadingAnilist && s.url));
-  const clampedIndex = Math.min(sourceIndex, availableSources.length - 1);
-  const currentSource = availableSources[clampedIndex];
-
-  const handleSkipIntro = () => {
-    localStorage.setItem(storageKey, String(INTRO_DURATION));
-    setResumeTime(INTRO_DURATION);
-    setShowSkipIntro(false);
-  };
-
-  const handleAudioSwitch = (type) => {
-    setAudioType(type);
-    setSourceIndex(0);
-  };
+  const embedUrl = `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -143,7 +62,7 @@ export default function Watch() {
         </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
-            onClick={() => handleAudioSwitch('sub')}
+            onClick={() => setAudioType('sub')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               audioType === 'sub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
             }`}
@@ -151,7 +70,7 @@ export default function Watch() {
             <Captions className="w-3.5 h-3.5" /> SUB
           </button>
           <button
-            onClick={() => handleAudioSwitch('dub')}
+            onClick={() => setAudioType('dub')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               audioType === 'dub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
             }`}
@@ -163,72 +82,29 @@ export default function Watch() {
 
       {/* Video Player */}
       <div className="relative w-full bg-black flex-shrink-0" style={{ paddingTop: 'min(56.25%, 80vh)' }}>
-        {currentSource ? (
-          <iframe
-            key={`${mal_id}-${ep}-${audioType}-${clampedIndex}-${al}`}
-            src={currentSource.url}
-            className="absolute inset-0 w-full h-full"
-            allowFullScreen
-            allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-            frameBorder="0"
-            title={`${title} Episode ${ep}`}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-          </div>
-        )}
-
-        {showSkipIntro && currentSource && (
-          <div className="absolute bottom-14 right-4 z-10">
-            <button
-              onClick={handleSkipIntro}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-900/90 border border-zinc-600 hover:border-emerald-500 text-white text-sm font-semibold rounded-lg backdrop-blur-sm transition-all hover:bg-zinc-800 shadow-lg"
-            >
-              <SkipForward className="w-4 h-4 text-emerald-400" />
-              Skip Intro
-            </button>
-          </div>
-        )}
+        <iframe
+          key={`${mal_id}-${ep}-${audioType}`}
+          src={embedUrl}
+          className="absolute inset-0 w-full h-full"
+          allowFullScreen
+          allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+          frameBorder="0"
+          title={`${title} Episode ${ep}`}
+        />
       </div>
 
-      {/* Info + server selector + Up Next */}
+      {/* Info + Up Next */}
       <div className="px-4 md:px-8 py-4 border-t border-zinc-900">
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-          <div>
-            <p className="text-white font-semibold">{title}</p>
-            <p className="text-zinc-500 text-sm mt-0.5">
-              Episode {ep}
-              {resumeTime > 10 && (
-                <span className="ml-3 text-emerald-500/70 text-xs">
-                  ● Resumed {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
-                </span>
-              )}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <p className="text-zinc-600 text-xs flex items-center gap-1.5">
-              <Server className="w-3 h-3" />
-              If video doesn't load, try another server
-              {loadingAnilist && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {availableSources.map((source, idx) => (
-                <button
-                  key={source.name}
-                  onClick={() => setSourceIndex(idx)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                    clampedIndex === idx
-                      ? 'bg-emerald-500 border-emerald-500 text-black'
-                      : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white'
-                  }`}
-                >
-                  {source.name}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="mb-6">
+          <p className="text-white font-semibold">{title}</p>
+          <p className="text-zinc-500 text-sm mt-0.5">
+            Episode {ep}
+            {resumeTime > 10 && (
+              <span className="ml-3 text-emerald-500/70 text-xs">
+                ● Resumed {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
+              </span>
+            )}
+          </p>
         </div>
 
         {/* Up Next */}
