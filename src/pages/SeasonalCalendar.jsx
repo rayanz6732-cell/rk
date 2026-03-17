@@ -11,12 +11,18 @@ const BASE = 'https://api.jikan.moe/v4';
 const DAY_MAP = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
 
 async function fetchDayAnime(day) {
-  // Try Jikan first
   try {
-    const res = await fetch(`${BASE}/schedules?filter=${day}&limit=50`);
+    // Fetch currently airing anime and filter by day
+    const res = await fetch(`${BASE}/anime?status=airing&order_by=score&sort=desc&limit=50`);
     if (res.ok) {
       const json = await res.json();
+      const dayLower = day.toLowerCase();
+      
       const anime = (json.data || [])
+        .filter(raw => {
+          const schedule = raw.broadcast?.day_of_week?.toLowerCase();
+          return schedule === dayLower;
+        })
         .sort((a, b) => (b.score || 0) - (a.score || 0))
         .slice(0, 5)
         .map(raw => ({
@@ -27,50 +33,29 @@ async function fetchDayAnime(day) {
           episodes: raw.episodes || 0,
           type: raw.type || 'TV',
         }));
+      
       if (anime.length > 0) return anime;
     }
   } catch (e) {
     console.error('Jikan error:', e);
   }
 
-  // Fallback to AniList GraphQL
+  // Fallback: fetch top airing anime regardless of schedule
   try {
-    const dayNum = DAY_MAP[day.toLowerCase()];
-    const query = `query {
-      Page(page: 1, perPage: 50) {
-        media(airingSchedule_greater: 0, sort: SCORE_DESC, type: ANIME) {
-          id
-          title { userPreferred }
-          coverImage { extraLarge large }
-          averageScore
-          episodes
-          format
-          airingSchedule { airingAt timeUntilAiring }
-        }
-      }
-    }`;
-    
-    const res = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
-    
+    const res = await fetch(`${BASE}/anime?status=airing&order_by=score&sort=desc&limit=5`);
     if (res.ok) {
       const json = await res.json();
-      return (json.data?.Page?.media || [])
-        .slice(0, 5)
-        .map(raw => ({
-          mal_id: raw.id,
-          title: raw.title?.userPreferred || 'Unknown',
-          cover_image: raw.coverImage?.extraLarge || raw.coverImage?.large || '',
-          score: raw.averageScore ? raw.averageScore / 10 : 0,
-          episodes: raw.episodes || 0,
-          type: raw.format || 'TV',
-        }));
+      return (json.data || []).map(raw => ({
+        mal_id: raw.mal_id,
+        title: raw.title_english || raw.title,
+        cover_image: raw.images?.jpg?.large_image_url || raw.images?.jpg?.image_url || '',
+        score: raw.score || 0,
+        episodes: raw.episodes || 0,
+        type: raw.type || 'TV',
+      }));
     }
   } catch (e) {
-    console.error('AniList error:', e);
+    console.error('Fallback error:', e);
   }
 
   return [];
