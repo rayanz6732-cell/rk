@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { JikanAPI, GENRE_IDS } from '../lib/jikan';
 import AnimeCard from '../components/anime/AnimeCard';
-import { Search as SearchIcon, Loader2, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search as SearchIcon, Loader2, SlidersHorizontal, X, ChevronLeft, ChevronRight, TrendingUp, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -13,38 +14,30 @@ const STATUSES = [
   { label: 'Upcoming', value: 'upcoming' },
 ];
 const TYPES = ['tv', 'movie', 'ova', 'ona', 'special'];
-const RATINGS = [
-  { label: 'PG-13', value: 'pg13' },
-  { label: 'R-17', value: 'r17' },
-  { label: 'PG', value: 'pg' },
-  { label: 'G', value: 'g' },
-];
 
 export default function Search() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const initialQuery = urlParams.get('q') || '';
-  const initialFilter = urlParams.get('filter') || '';
+  const [searchParams] = useSearchParams();
+  const urlQuery = searchParams.get('q') || '';
+  const filter = searchParams.get('filter') || '';
 
-  const [searchText, setSearchText] = useState(initialQuery);
-  const [submittedQuery, setSubmittedQuery] = useState(initialQuery);
+  const [searchText, setSearchText] = useState(urlQuery);
+  const [submittedQuery, setSubmittedQuery] = useState(urlQuery);
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedType, setSelectedType] = useState('');
-  const [selectedRating, setSelectedRating] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
 
-  // Determine fetch mode
+  const isTrending = filter === 'trending' && !submittedQuery && !selectedGenre;
+  const isNewReleases = filter === 'new' && !submittedQuery && !selectedGenre;
   const isSearchMode = submittedQuery.trim().length > 0;
-  const isGenreMode = !!selectedGenre;
+  const isGenreMode = !!selectedGenre && !isSearchMode;
 
   const searchFilters = {
     ...(selectedStatus && { status: selectedStatus }),
     ...(selectedType && { type: selectedType }),
-    ...(selectedRating && { rating: selectedRating }),
   };
 
-  // Search query
   const { data: searchResults, isLoading: loadingSearch } = useQuery({
     queryKey: ['anime-search', submittedQuery, page, searchFilters],
     queryFn: () => JikanAPI.search(submittedQuery, page, searchFilters),
@@ -52,28 +45,42 @@ export default function Search() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Genre browse
   const { data: genreResults, isLoading: loadingGenre } = useQuery({
     queryKey: ['anime-genre', selectedGenre, page],
     queryFn: () => JikanAPI.getByGenre(GENRE_IDS[selectedGenre], page),
-    enabled: isGenreMode && !isSearchMode,
+    enabled: isGenreMode,
     staleTime: 1000 * 60 * 10,
   });
 
-  // Default browse (no search, no genre)
-  const { data: topAiring, isLoading: loadingDefault } = useQuery({
-    queryKey: ['browse-default', initialFilter, page],
-    queryFn: () => {
-      if (initialFilter === 'popular') return JikanAPI.getMostPopular(page);
-      if (initialFilter === 'top') return JikanAPI.getTopAiring(page);
-      return JikanAPI.getCurrentSeason(page);
-    },
-    enabled: !isSearchMode && !isGenreMode,
+  const { data: trendingResults, isLoading: loadingTrending } = useQuery({
+    queryKey: ['anime-trending', page],
+    queryFn: () => JikanAPI.getTrending(page),
+    enabled: isTrending,
     staleTime: 1000 * 60 * 10,
   });
 
-  const isLoading = loadingSearch || loadingGenre || loadingDefault;
-  const activeData = isSearchMode ? searchResults : isGenreMode ? genreResults : topAiring;
+  const { data: newResults, isLoading: loadingNew } = useQuery({
+    queryKey: ['anime-new', page],
+    queryFn: () => JikanAPI.getNewReleases(page),
+    enabled: isNewReleases,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: defaultResults, isLoading: loadingDefault } = useQuery({
+    queryKey: ['browse-default', page],
+    queryFn: () => JikanAPI.getCurrentSeason(page),
+    enabled: !isSearchMode && !isGenreMode && !isTrending && !isNewReleases,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const isLoading = loadingSearch || loadingGenre || loadingTrending || loadingNew || loadingDefault;
+
+  const activeData = isSearchMode ? searchResults
+    : isGenreMode ? genreResults
+    : isTrending ? trendingResults
+    : isNewReleases ? newResults
+    : defaultResults;
+
   const animeList = activeData?.data || [];
   const pagination = activeData?.pagination;
   const hasNextPage = pagination?.has_next_page;
@@ -90,20 +97,21 @@ export default function Search() {
     setSelectedGenre('');
     setSelectedStatus('');
     setSelectedType('');
-    setSelectedRating('');
-    setPage(1);
-  };
-
-  const handleGenreToggle = (g) => {
-    setSelectedGenre(prev => prev === g ? '' : g);
     setPage(1);
   };
 
   const pageTitle = () => {
-    if (initialFilter === 'popular') return '🔥 Most Popular';
-    if (initialFilter === 'top') return '⭐ Top Rated';
-    if (initialFilter === 'season') return '📺 This Season';
+    if (isTrending) return 'Trending';
+    if (isNewReleases) return 'New Releases';
+    if (isSearchMode) return `Results for "${submittedQuery}"`;
+    if (isGenreMode) return `${selectedGenre} Anime`;
     return 'Browse Anime';
+  };
+
+  const pageIcon = () => {
+    if (isTrending) return <TrendingUp className="w-7 h-7 text-emerald-400" />;
+    if (isNewReleases) return <Sparkles className="w-7 h-7 text-emerald-400" />;
+    return null;
   };
 
   return (
@@ -111,7 +119,10 @@ export default function Search() {
       {/* Header */}
       <div className="bg-gradient-to-b from-emerald-950/20 to-transparent pt-8 pb-10 px-4">
         <div className="container mx-auto max-w-7xl">
-          <h1 className="text-3xl md:text-4xl font-black text-white mb-1">{pageTitle()}</h1>
+          <div className="flex items-center gap-3 mb-1">
+            {pageIcon()}
+            <h1 className="text-3xl md:text-4xl font-black text-white">{pageTitle()}</h1>
+          </div>
           <p className="text-zinc-500 text-sm mb-6">Powered by MyAnimeList · 25,000+ titles</p>
 
           <form onSubmit={handleSearch} className="flex gap-3 max-w-2xl">
@@ -139,15 +150,13 @@ export default function Search() {
             </Button>
           </form>
 
-          {/* Filters panel */}
           {showFilters && (
             <div className="mt-4 p-5 bg-zinc-900/70 rounded-2xl border border-zinc-800/60 max-w-3xl space-y-5">
-              {/* Genres */}
               <div>
                 <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2.5 font-semibold">Genre</p>
                 <div className="flex flex-wrap gap-2">
                   {GENRES.map(g => (
-                    <button key={g} onClick={() => handleGenreToggle(g)}
+                    <button key={g} onClick={() => { setSelectedGenre(prev => prev === g ? '' : g); setPage(1); }}
                       className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                         selectedGenre === g ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
                       }`}>
@@ -156,8 +165,6 @@ export default function Search() {
                   ))}
                 </div>
               </div>
-
-              {/* Status */}
               <div>
                 <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2.5 font-semibold">Status</p>
                 <div className="flex flex-wrap gap-2">
@@ -171,8 +178,6 @@ export default function Search() {
                   ))}
                 </div>
               </div>
-
-              {/* Type */}
               <div>
                 <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2.5 font-semibold">Type</p>
                 <div className="flex flex-wrap gap-2">
@@ -186,7 +191,6 @@ export default function Search() {
                   ))}
                 </div>
               </div>
-
               <button onClick={clearAll} className="flex items-center gap-1.5 text-xs text-zinc-600 hover:text-red-400 transition-colors">
                 <X className="w-3 h-3" /> Clear all
               </button>
@@ -196,25 +200,45 @@ export default function Search() {
       </div>
 
       {/* Results */}
-      <div className="container mx-auto px-4 md:px-8 max-w-7xl pb-16">
+      <div className="container mx-auto px-4 md:px-8 max-w-7xl pb-24">
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
           </div>
         ) : animeList.length > 0 ? (
           <>
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-zinc-600">
-                {submittedQuery ? `Results for "${submittedQuery}"` : selectedGenre ? `${selectedGenre} anime` : 'Showing anime'}
-                {pagination && ` · Page ${page}`}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-5">
-              {animeList.map((anime) => (
-                <AnimeCard key={anime.mal_id} anime={anime} />
-              ))}
-            </div>
+            {/* Trending: ranked list view */}
+            {isTrending ? (
+              <div className="space-y-3">
+                {animeList.map((anime, idx) => {
+                  const rank = (page - 1) * 25 + idx + 1;
+                  return (
+                    <a key={anime.mal_id} href={`/AnimeDetail?id=${anime.mal_id}`}
+                      className="flex items-center gap-4 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/50 hover:border-emerald-500/40 transition-all group">
+                      <span className={`text-2xl font-black w-10 text-right flex-shrink-0 ${rank <= 3 ? 'text-emerald-400' : 'text-zinc-600'}`}>
+                        {rank}
+                      </span>
+                      <img src={anime.cover_image} alt={anime.title} className="w-12 h-16 object-cover rounded-lg flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-sm line-clamp-1 group-hover:text-emerald-400 transition-colors">{anime.title}</p>
+                        <p className="text-zinc-500 text-xs mt-0.5">{anime.type} · {anime.release_year || '—'}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          {anime.score > 0 && <span className="text-xs text-yellow-400">★ {anime.score}</span>}
+                          <span className="text-xs text-zinc-600">{(anime.members / 1000).toFixed(0)}K members</span>
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Grid view for everything else */
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-5">
+                {animeList.map((anime) => (
+                  <AnimeCard key={anime.mal_id} anime={anime} />
+                ))}
+              </div>
+            )}
 
             {/* Pagination */}
             <div className="flex items-center justify-center gap-3 mt-10">
@@ -231,7 +255,7 @@ export default function Search() {
               </Button>
             </div>
           </>
-        ) : !isLoading && (
+        ) : (
           <div className="text-center py-24">
             <p className="text-zinc-500 text-lg mb-1">No results found</p>
             <p className="text-zinc-700 text-sm">Try a different search term or filter</p>
