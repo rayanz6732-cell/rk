@@ -1,14 +1,39 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { base44 } from '@/api/base44Client';
 import Navbar from './anime/Navbar';
 import BottomTabBar from './anime/BottomTabBar';
+
+const THEMES = [
+  { id: 'default', colors: { primary: '142 71% 45%' } },
+  { id: 'cherry', colors: { primary: '340 82% 52%' } },
+  { id: 'neon', colors: { primary: '280 90% 50%' } },
+  { id: 'aurora', colors: { primary: '162 73% 46%' } },
+  { id: 'ocean', colors: { primary: '217 91% 60%' } },
+  { id: 'sunset', colors: { primary: '39 89% 49%' } }
+];
 
 const HIDE_FOOTER_PAGES = ['/Watch'];
 
 export default function Layout() {
   const location = useLocation();
   const hideFooter = HIDE_FOOTER_PAGES.some(p => location.pathname.startsWith(p));
+
+  useEffect(() => {
+    const loadTheme = async () => {
+      const user = await base44.auth.me();
+      if (user?.theme) {
+        const theme = THEMES.find(t => t.id === user.theme);
+        if (theme) {
+          const root = document.documentElement;
+          root.style.setProperty('--primary', theme.colors.primary);
+          root.style.setProperty('--ring', theme.colors.primary);
+        }
+      }
+    };
+    loadTheme();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
