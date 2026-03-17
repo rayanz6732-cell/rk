@@ -1,4 +1,4 @@
-// Ad blocker utility - blocks malware and ad network domains
+// Ad blocker utility - comprehensive ad and malware blocking
 const BLOCKED_DOMAINS = [
   // Major ad networks
   'googleadservices.com',
@@ -35,17 +35,34 @@ const BLOCKED_DOMAINS = [
   'appnexus.com',
   'adroll.com',
   'adsrvr.org',
+  'vidyard.com',
+  'ads-adnxs.com',
 ];
 
 // Block ads and malware at network level
 export function initAdBlocker() {
+  // Set Content Security Policy
+  const meta = document.createElement('meta');
+  meta.httpEquiv = 'Content-Security-Policy';
+  meta.content = `
+    default-src 'self' https:;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:;
+    style-src 'self' 'unsafe-inline' https:;
+    img-src 'self' data: https: blob:;
+    media-src 'self' blob: https:;
+    iframe-src 'self' https: blob:;
+    connect-src 'self' https: wss: blob:;
+    frame-ancestors 'self';
+  `.replace(/\n/g, '');
+  document.head.appendChild(meta);
+
   // Intercept fetch requests
   const originalFetch = window.fetch;
   window.fetch = function(...args) {
     const url = args[0]?.toString?.() || '';
     
     if (isBlockedUrl(url)) {
-      console.warn('[AdBlocker] Blocked request to:', url);
+      console.warn('[AdBlocker] Blocked fetch:', url);
       return Promise.reject(new Error('Blocked by ad blocker'));
     }
     
@@ -56,7 +73,7 @@ export function initAdBlocker() {
   const originalOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function(method, url, ...rest) {
     if (isBlockedUrl(url)) {
-      console.warn('[AdBlocker] Blocked XHR request to:', url);
+      console.warn('[AdBlocker] Blocked XHR:', url);
       this._blocked = true;
       return;
     }
@@ -85,17 +102,28 @@ export function initAdBlocker() {
       };
     }
     
+    if (tag === 'img') {
+      const originalSetAttribute = element.setAttribute;
+      element.setAttribute = function(attr, value) {
+        if ((attr === 'src' || attr === 'data-src') && isBlockedUrl(value)) {
+          console.warn('[AdBlocker] Blocked image:', value);
+          element.style.display = 'none';
+          return;
+        }
+        return originalSetAttribute.call(this, attr, value);
+      };
+    }
+    
     return element;
   };
 
-  // Block popups
+  // Block popups aggressively
   const originalWindowOpen = window.open;
   window.open = function(url, ...rest) {
-    if (url && isBlockedUrl(url)) {
+    if (url && (isBlockedUrl(url) || url.includes('ad') || url.includes('pop'))) {
       console.warn('[AdBlocker] Blocked popup:', url);
       return null;
     }
-    // Limit popups in general for security
     return originalWindowOpen.apply(window, [url, ...rest]);
   };
 
@@ -104,7 +132,7 @@ export function initAdBlocker() {
   Object.defineProperty(Element.prototype, 'innerHTML', {
     set(value) {
       if (containsAdCode(value)) {
-        console.warn('[AdBlocker] Blocked ad injection via innerHTML');
+        console.warn('[AdBlocker] Blocked ad injection');
         return;
       }
       return originalInnerHTML.set.call(this, value);
@@ -114,7 +142,30 @@ export function initAdBlocker() {
     },
   });
 
-  console.log('[AdBlocker] Initialized - Protecting against malware ads');
+  // Monitor DOM for injected ad elements
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element node
+            if (isAdElement(node)) {
+              node.remove();
+              console.warn('[AdBlocker] Removed ad element');
+            }
+          }
+        });
+      }
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['src', 'data-src', 'href', 'onclick']
+  });
+
+  console.log('[AdBlocker] Initialized - Full protection enabled');
 }
 
 // Check if URL belongs to blocked domain
@@ -145,34 +196,59 @@ function containsAdCode(html) {
     /ad\.gif/i,
     /banner.*ad/i,
     /advert/i,
+    /ads-adnxs/i,
+    /criteo/i,
+    /taboola/i,
+    /outbrain/i,
   ];
   
   return adPatterns.some(pattern => pattern.test(html));
+}
+
+// Detect ad elements in DOM
+function isAdElement(element) {
+  if (!element) return false;
+  
+  const classList = element.className?.toLowerCase?.() || '';
+  const id = element.id?.toLowerCase?.() || '';
+  const dataAttrs = element.dataset || {};
+  
+  const adKeywords = ['ad', 'ads', 'advert', 'banner', 'popup', 'popunder', 'overlay', 'float', 'sticky'];
+  
+  for (const keyword of adKeywords) {
+    if (classList.includes(keyword) || id.includes(keyword) || 
+        Object.values(dataAttrs).some(v => v?.includes?.(keyword))) {
+      return true;
+    }
+  }
+  
+  // Check for suspicious attributes
+  if (element.src && isBlockedUrl(element.src)) return true;
+  if (element.href && isBlockedUrl(element.href)) return true;
+  if (element.onclick?.toString?.().includes('ad')) return true;
+  
+  return false;
 }
 
 // Block ads on iframes
 export function blockIframeAds(iframeElement) {
   if (!iframeElement) return;
   
-  // Sandbox the iframe to prevent scripts and popups
+  // Sandbox the iframe with minimal permissions
   iframeElement.setAttribute('sandbox', 
     'allow-same-origin allow-scripts allow-presentation allow-fullscreen'
   );
   
-  // Monitor iframe for popup attempts
+  // Block window.open in iframe
   try {
     iframeElement.onload = () => {
-      const iframeDoc = iframeElement.contentDocument || iframeElement.contentWindow?.document;
-      if (iframeDoc) {
-        // Block window.open in iframe
-        try {
-          iframeElement.contentWindow.open = function() {
-            console.warn('[AdBlocker] Blocked popup from iframe');
-            return null;
-          };
-        } catch (e) {
-          // Cross-origin, can't access - sandbox already handles this
-        }
+      try {
+        iframeElement.contentWindow.open = function() {
+          console.warn('[AdBlocker] Blocked popup from iframe');
+          return null;
+        };
+      } catch (e) {
+        // Cross-origin, sandbox handles it
       }
     };
   } catch (e) {
