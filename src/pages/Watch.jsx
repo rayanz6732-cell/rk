@@ -103,7 +103,6 @@ export default function Watch() {
           </button>
         </div>
         </div>
-        </div>
       </div>
 
       {/* Main content: player + sidebar */}
