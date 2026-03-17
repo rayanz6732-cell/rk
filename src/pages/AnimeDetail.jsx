@@ -17,6 +17,7 @@ export default function AnimeDetail() {
   const mal_id = urlParams.get('id');
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [epPage, setEpPage] = useState(1);
+  const [epJump, setEpJump] = useState('');
 
   // Reset state when anime changes
   useEffect(() => {
