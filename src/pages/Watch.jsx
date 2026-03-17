@@ -111,7 +111,7 @@ export default function Watch() {
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
             <iframe
-              key={`${mal_id}-${ep}-${audioType}`}
+              key={`${mal_id}-${ep}-${audioType}-${server}`}
               src={embedUrl}
               className="absolute inset-0 w-full h-full"
               allowFullScreen
