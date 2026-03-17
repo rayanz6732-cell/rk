@@ -29,11 +29,7 @@ export default function Watch() {
   const storageKey = `rk_progress_${mal_id}_ep${ep}`;
 
   const [audioType, setAudioType] = useState('sub');
-  const [showSkipIntro, setShowSkipIntro] = useState(true);
   const [resumeTime, setResumeTime] = useState(0);
-  const [anilistId, setAnilistId] = useState(null);
-  const [loadingAnilist, setLoadingAnilist] = useState(true);
-  const [sourceIndex, setSourceIndex] = useState(0);
   const [episodes, setEpisodes] = useState([]);
 
   useEffect(() => {
