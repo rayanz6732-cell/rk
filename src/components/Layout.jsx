@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from './anime/Navbar';
 import BottomTabBar from './anime/BottomTabBar';
+import Sidebar from './Sidebar';
 
 const HIDE_FOOTER_PAGES = ['/Watch'];
 
@@ -38,6 +39,7 @@ export default function Layout() {
         }
       `}</style>
       <Navbar />
+      <Sidebar />
       <main className="pt-14 pb-safe-bottom">
         <AnimatePresence mode="wait">
           <motion.div
