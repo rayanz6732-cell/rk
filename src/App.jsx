@@ -13,7 +13,6 @@ import AnimeDetail from './pages/AnimeDetail';
 import Watch from './pages/Watch';
 import Profile from './pages/Profile';
 import SeasonalCalendar from './pages/SeasonalCalendar';
-import Settings from './pages/Settings';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,7 +48,6 @@ const AuthenticatedApp = () => {
         <Route path="/Watch" element={<Watch />} />
         <Route path="/Profile" element={<Profile />} />
         <Route path="/SeasonalCalendar" element={<SeasonalCalendar />} />
-        <Route path="/Settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
