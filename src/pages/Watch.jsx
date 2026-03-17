@@ -160,20 +160,9 @@ export default function Watch() {
                     <Link
                       key={e.mal_id}
                       to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
-                      className="group flex gap-3 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all p-2"
+                      className="group flex items-center gap-3 rounded-xl bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all px-3 py-3"
                     >
-                      <div className="relative w-28 flex-shrink-0 aspect-video rounded-lg overflow-hidden">
-                        {thumb
-                          ? <img src={thumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Play className="w-4 h-4 text-zinc-600" /></div>
-                        }
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-7 h-7 rounded-full bg-emerald-500/90 flex items-center justify-center">
-                            <Play className="w-3 h-3 text-white fill-white ml-0.5" />
-                          </div>
-                        </div>
-                      </div>
+                      <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.mal_id}</span>
                       <div className="flex flex-col justify-center min-w-0">
                         <p className="text-[11px] text-zinc-500">Episode {e.mal_id}</p>
                         <p className="text-xs text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors">{e.title || `Episode ${e.mal_id}`}</p>
