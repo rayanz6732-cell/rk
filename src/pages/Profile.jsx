@@ -121,15 +121,16 @@ export default function Profile() {
         {/* Profile Header */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex items-center gap-5">
           <div className="w-20 h-20 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-            {user.avatar_url
+            {user && user.avatar_url
               ? <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover rounded-2xl" />
               : <User className="w-9 h-9 text-emerald-400" />
             }
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white">{user.full_name || 'Anime Fan'}</h1>
-            <p className="text-zinc-500 text-sm">{user.email}</p>
-            {user.bio && <p className="text-zinc-400 text-sm mt-1">{user.bio}</p>}
+            <h1 className="text-2xl font-black text-white">{user ? user.full_name || 'Anime Fan' : 'Guest Profile'}</h1>
+            {user && <p className="text-zinc-500 text-sm">{user.email}</p>}
+            {user && user.bio && <p className="text-zinc-400 text-sm mt-1">{user.bio}</p>}
+            {!user && <p className="text-zinc-500 text-sm">Sign in to save your stats and preferences</p>}
           </div>
         </div>
 
