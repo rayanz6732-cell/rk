@@ -26,6 +26,13 @@ export default function Watch() {
   }, [mal_id, ep]);
 
   useEffect(() => {
+    // Block ads on the video player iframe
+    if (iframeRef.current) {
+      blockIframeAds(iframeRef.current);
+    }
+  }, [mal_id, ep, audioType, server]);
+
+  useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       const t = parseInt(saved, 10);
