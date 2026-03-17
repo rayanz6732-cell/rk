@@ -20,7 +20,8 @@ export default function Watch() {
 
   useEffect(() => {
     JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
-  }, [mal_id]);
+    recordWatchActivity().catch(() => {});
+  }, [mal_id, ep]);
 
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
