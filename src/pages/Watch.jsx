@@ -110,6 +110,7 @@ export default function Watch() {
             {episodes.length > 0 && (() => {
               const currentEpNum = parseInt(ep);
               const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 10);
+              const coverThumb = `https://img.anili.st/media/${mal_id}`;
               if (!nextEps.length) return null;
               return (
                 <div className="mt-5">
