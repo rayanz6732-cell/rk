@@ -120,9 +120,9 @@ export default function SeasonalCalendar() {
                   <p className="text-xs font-medium text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors leading-tight">
                     {anime.title}
                   </p>
-                  {anime.episodes > 0 && (
-                    <p className="text-[10px] text-zinc-600 mt-0.5">{anime.episodes} eps</p>
-                  )}
+                  <p className="text-[10px] text-zinc-600 mt-0.5">
+                    {anime.episodes > 0 ? `${anime.episodes} eps` : 'TBA'}
+                  </p>
                 </Link>
               ))}
             </div>
