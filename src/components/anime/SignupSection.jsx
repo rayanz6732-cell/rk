@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Loader2 } from 'lucide-react';
 
 export default function SignupSection() {
