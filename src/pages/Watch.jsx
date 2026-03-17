@@ -105,6 +105,50 @@ export default function Watch() {
                 </span>
               )}
             </p>
+
+            {/* Next Episodes — mobile/below player */}
+            {episodes.length > 0 && (() => {
+              const currentEpNum = parseInt(ep);
+              const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 10);
+              if (!nextEps.length) return null;
+              return (
+                <div className="mt-5">
+                  <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-3">Up Next</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {nextEps.map(e => {
+                      const thumb = e.images?.jpg?.image_url;
+                      return (
+                        <Link
+                          key={e.mal_id}
+                          to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
+                          className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
+                        >
+                          <div className="relative aspect-video">
+                            {thumb
+                              ? <img src={thumb} alt={`Ep ${e.mal_id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Play className="w-5 h-5 text-zinc-600" /></div>
+                            }
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="w-9 h-9 rounded-full bg-emerald-500/90 flex items-center justify-center">
+                                <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+                              </div>
+                            </div>
+                            <div className="absolute bottom-1.5 right-2 text-white font-black text-base drop-shadow-lg">{e.mal_id}</div>
+                          </div>
+                          <div className="px-2 py-1.5">
+                            <p className="text-[11px] font-medium text-zinc-500 mb-0.5">Episode {e.mal_id}</p>
+                            <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                              {e.title || `Episode ${e.mal_id}`}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
