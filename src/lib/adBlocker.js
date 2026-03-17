@@ -89,14 +89,14 @@ export function initAdBlocker() {
   };
 
   // Block popups
-  const originalOpen = window.open;
+  const originalWindowOpen = window.open;
   window.open = function(url, ...rest) {
     if (url && isBlockedUrl(url)) {
       console.warn('[AdBlocker] Blocked popup:', url);
       return null;
     }
     // Limit popups in general for security
-    return originalOpen.apply(window, [url, ...rest]);
+    return originalWindowOpen.apply(window, [url, ...rest]);
   };
 
   // Prevent ads from dynamically injecting content
