@@ -71,6 +71,6 @@ export default function AnimeCard({ anime }) {
           </div>
         )}
       </div>
-    </Link>
+    </div>
   );
 }
