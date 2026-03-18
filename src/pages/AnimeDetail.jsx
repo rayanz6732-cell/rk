@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
 import AnimeCard from '../components/anime/AnimeCard';
 import {

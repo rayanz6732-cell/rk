@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Play } from 'lucide-react';
 
 export default function SeasonCard({ entry, seasonNumber }) {
   const [imgUrl, setImgUrl] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch the actual cover image from Jikan
     fetch(`https://api.jikan.moe/v4/anime/${entry.mal_id}`)
       .then(r => r.json())
       .then(d => {
@@ -17,9 +17,9 @@ export default function SeasonCard({ entry, seasonNumber }) {
   }, [entry.mal_id]);
 
   return (
-    <Link
-      to={`/AnimeDetail?id=${entry.mal_id}`}
-      className="group bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 rounded-xl overflow-hidden transition-all"
+    <div
+      onClick={() => navigate(`/AnimeDetail?id=${entry.mal_id}`)}
+      className="group cursor-pointer bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 rounded-xl overflow-hidden transition-all"
     >
       <div className="aspect-[3/4] bg-zinc-800 relative overflow-hidden">
         {imgUrl ? (
@@ -40,6 +40,6 @@ export default function SeasonCard({ entry, seasonNumber }) {
       <div className="p-2">
         <p className="text-xs text-zinc-300 font-medium line-clamp-2 group-hover:text-emerald-400 transition-colors">{entry.name}</p>
       </div>
-    </Link>
+    </div>
   );
 }
