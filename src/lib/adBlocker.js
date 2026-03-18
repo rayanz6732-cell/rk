@@ -148,7 +148,28 @@ export function initAdBlocker() {
     },
   });
 
-  // DOM mutation observer disabled - causes conflicts with React's DOM reconciliation
+  // DOM mutation observer - only watches direct children of <body>, never touches React's subtree
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        // Skip anything inside React's root to avoid conflicts
+        if (node.closest?.('#root')) continue;
+        if (isAdElement(node)) {
+          setTimeout(() => {
+            try {
+              if (node.parentNode) node.parentNode.removeChild(node);
+            } catch (_) {}
+          }, 0);
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: false, // Only direct children of <body>, never React's tree
+  });
 
   console.log('[AdBlocker] Initialized - Full protection enabled');
 }
