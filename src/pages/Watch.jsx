@@ -76,7 +76,9 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  const embedUrl = server === 'vidsrc'
+  const embedUrl = server === 'animekai'
+    ? animeKaiUrl
+    : server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
 
