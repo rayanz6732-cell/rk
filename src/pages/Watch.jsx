@@ -22,6 +22,8 @@ export default function Watch() {
   const iframeRef = useRef(null);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [scraperSrc, setScraperSrc] = useState(null);
+  const [scraperLoading, setScraperLoading] = useState(false);
 
   const fetchEpisodes = async () => {
     if (!mal_id) return;
@@ -40,6 +42,24 @@ export default function Watch() {
     fetchEpisodes();
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
+
+  useEffect(() => {
+    // Fetch scraper stream when S3 is selected
+    if (server === 'scraper') {
+      setScraperLoading(true);
+      base44.functions.invoke('scrapeAnimeEpisode', {
+        mal_id: parseInt(mal_id),
+        episode: parseInt(ep),
+        audio_type: audioType
+      })
+        .then(res => setScraperSrc(res.data?.src || null))
+        .catch(err => {
+          console.error('Scraper error:', err);
+          setScraperSrc(null);
+        })
+        .finally(() => setScraperLoading(false));
+    }
+  }, [mal_id, ep, audioType, server]);
 
   useEffect(() => {
     // Block ads on the video player iframe
@@ -110,6 +130,14 @@ export default function Watch() {
             >
               S2
             </button>
+            <button
+              onClick={() => setServer('scraper')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                server === 'scraper' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              S3
+            </button>
           </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
@@ -137,7 +165,31 @@ export default function Watch() {
         {/* Video + info */}
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-            <iframe
+            {server === 'scraper' ? (
+              scraperLoading ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                  <p className="text-zinc-400 text-sm">Searching across sources...</p>
+                </div>
+              ) : scraperSrc ? (
+                <iframe
+                  key={`${mal_id}-${ep}-${audioType}-scraper-${scraperSrc}`}
+                  src={scraperSrc}
+                  className="absolute inset-0 w-full h-full"
+                  allowFullScreen
+                  allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                  sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+                  frameBorder="0"
+                  title={`${title} Episode ${ep}`}
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900">
+                  <p className="text-zinc-300 text-sm">Episode not found on sources</p>
+                  <p className="text-zinc-600 text-xs">Try S1 or S2</p>
+                </div>
+              )
+            ) : (
+              <iframe
                 ref={iframeRef}
                 key={`${mal_id}-${ep}-${audioType}-${server}`}
                 src={embedUrl}
@@ -148,6 +200,7 @@ export default function Watch() {
                 frameBorder="0"
                 title={`${title} Episode ${ep}`}
               />
+            )}
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
