@@ -20,6 +20,9 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
+  const [s3Loading, setS3Loading] = useState(false);
+  const [s3Src, setS3Src] = useState(null);
+  const [s3Error, setS3Error] = useState(null);
 
   const iframeRef = useRef(null);
 
