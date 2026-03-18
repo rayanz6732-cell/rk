@@ -1,15 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
-const ANIMEKAI_BASE = "https://animekai.to";
+// Test using the aniwatch npm package which scrapes hianime.to
+// This is the same package used by the aniwatch-api project
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
-
-async function encodeToken(text) {
-  const r = await fetch(`https://enc-dec.app/api/enc-kai?text=${encodeURIComponent(text)}`, {
-    headers: { "User-Agent": UA, "Referer": ANIMEKAI_BASE }
-  });
-  const data = await r.json();
-  return data.result;
-}
 
 Deno.serve(async (req) => {
   const cors = { "Access-Control-Allow-Origin": "*" };
@@ -21,59 +14,82 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401, headers: cors });
 
     const body = await req.json();
-    const step = body.step || "test_headers";
+    const step = body.step || "search";
 
-    if (step === "test_headers") {
-      // Test multiple header combinations to see what breaks the 403
-      const encodedAniId = await encodeToken("c4ey");
-      const url = `${ANIMEKAI_BASE}/ajax/episodes/list?ani_id=${encodeURIComponent(encodedAniId)}`;
-      const slug = "one-piece-dk6r";
-      
-      const tests = [
-        {
-          label: "minimal",
-          headers: { "User-Agent": UA }
-        },
-        {
-          label: "with_referer",
-          headers: { "User-Agent": UA, "Referer": `${ANIMEKAI_BASE}/watch/${slug}` }
-        },
-        {
-          label: "with_xhr",
-          headers: { "User-Agent": UA, "Referer": `${ANIMEKAI_BASE}/watch/${slug}`, "X-Requested-With": "XMLHttpRequest" }
-        },
-        {
-          label: "with_accept",
-          headers: { "User-Agent": UA, "Referer": `${ANIMEKAI_BASE}/watch/${slug}`, "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01" }
-        },
-        {
-          label: "no_user_agent",
-          headers: { "Referer": `${ANIMEKAI_BASE}/watch/${slug}`, "X-Requested-With": "XMLHttpRequest" }
-        },
-      ];
-
-      const results = [];
-      for (const t of tests) {
-        const r = await fetch(url, { headers: t.headers });
-        const text = await r.text();
-        let parsed;
-        try { parsed = JSON.parse(text); } catch { parsed = null; }
-        results.push({ label: t.label, http_status: r.status, api_status: parsed?.status, message: parsed?.message, has_html: !!(parsed?.result?.html) });
-      }
-      return Response.json({ encoded_ani_id: encodedAniId, results }, { headers: cors });
-    }
-
-    // Try fetching from a known public anime API proxy to see if AnimeKai is accessible
-    if (step === "check_accessible") {
-      const r = await fetch(`${ANIMEKAI_BASE}/ajax/anime/search?keyword=naruto`, {
-        headers: { "User-Agent": UA, "X-Requested-With": "XMLHttpRequest" }
+    // Step 1: Search hianime.to directly for a title to get hianime ID
+    if (step === "search") {
+      const query = body.query || "one piece";
+      const r = await fetch(`https://hianimez.to/search?keyword=${encodeURIComponent(query)}`, {
+        headers: {
+          "User-Agent": UA,
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        }
       });
-      const text = await r.text();
-      return Response.json({ status: r.status, body: text.slice(0, 500) }, { headers: cors });
+      const html = await r.text();
+      // Extract anime IDs from search results - format is /watch/slug-XXXX
+      const matches = [...html.matchAll(/href="\/([a-z0-9-]+-\d+)"/g)];
+      const ids = [...new Set(matches.map(m => m[1]))].slice(0, 5);
+      return Response.json({ status: r.status, ids, html_len: html.length }, { headers: cors });
     }
 
-    return Response.json({ error: "Unknown step" }, { headers: cors });
+    // Step 2: Get episodes list for a hianime ID
+    if (step === "episodes") {
+      const animeId = body.anime_id || "one-piece-100"; // hianime format
+      const r = await fetch(`https://hianimez.to/ajax/v2/episode/list/${animeId.split('-').pop()}`, {
+        headers: {
+          "User-Agent": UA,
+          "Referer": `https://hianimez.to/${animeId}`,
+          "X-Requested-With": "XMLHttpRequest",
+        }
+      });
+      const data = await r.json();
+      const html = data?.html || "";
+      const epMatches = [...html.matchAll(/data-id="(\d+)"[^>]*data-number="(\d+)"/g)];
+      const episodes = epMatches.slice(0, 5).map(m => ({ id: m[1], number: m[2] }));
+      return Response.json({ status: r.status, episodes, total: epMatches.length }, { headers: cors });
+    }
+
+    // Step 3: Get streaming sources for a hianime episode ID
+    if (step === "sources") {
+      const episodeId = body.episode_id; // numeric hianime episode id
+      const server = body.server || "hd-1";
+      const category = body.category || "sub"; // sub or dub
+
+      // First get the servers
+      const serversR = await fetch(`https://hianimez.to/ajax/v2/episode/servers?episodeId=${episodeId}`, {
+        headers: {
+          "User-Agent": UA,
+          "Referer": "https://hianimez.to/",
+          "X-Requested-With": "XMLHttpRequest",
+        }
+      });
+      const serversData = await serversR.json();
+      const serversHtml = serversData?.html || "";
+      // Extract server data-id values for sub category
+      const serverMatches = [...serversHtml.matchAll(/class="server-item[^"]*"[^>]*data-id="(\d+)"[^>]*data-type="(sub|dub)"[^>]*data-server-id="(\d+)"/g)];
+      const serverList = serverMatches.map(m => ({ item_id: m[1], type: m[2], server_id: m[3] }));
+
+      // Pick first sub server
+      const chosenServer = serverList.find(s => s.type === category) || serverList[0];
+      if (!chosenServer) {
+        return Response.json({ error: "No servers", serverList, serversHtml: serversHtml.slice(0, 500) }, { headers: cors });
+      }
+
+      // Get source URL
+      const sourceR = await fetch(`https://hianimez.to/ajax/v2/episode/sources?id=${chosenServer.item_id}`, {
+        headers: {
+          "User-Agent": UA,
+          "Referer": "https://hianimez.to/",
+          "X-Requested-With": "XMLHttpRequest",
+        }
+      });
+      const sourceData = await sourceR.json();
+      return Response.json({ source_status: sourceR.status, sourceData, chosenServer }, { headers: cors });
+    }
+
+    return Response.json({ error: "Unknown step. Use: search, episodes, sources" }, { headers: cors });
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500, headers: { "Access-Control-Allow-Origin": "*" } });
+    return Response.json({ error: err.message, stack: err.stack?.slice(0, 300) }, { status: 500, headers: { "Access-Control-Allow-Origin": "*" } });
   }
 });
