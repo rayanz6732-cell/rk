@@ -148,33 +148,7 @@ export function initAdBlocker() {
     },
   });
 
-  // Monitor DOM for injected ad elements
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1 && node.parentNode && isAdElement(node)) {
-            // Use setTimeout to avoid interfering with React's synchronous DOM reconciliation
-            setTimeout(() => {
-              try {
-                if (node.parentNode) {
-                  node.parentNode.removeChild(node);
-                  console.warn('[AdBlocker] Removed ad element');
-                }
-              } catch (e) {
-                // Node already removed, ignore
-              }
-            }, 0);
-          }
-        });
-      }
-    });
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
+  // DOM mutation observer disabled - causes conflicts with React's DOM reconciliation
 
   console.log('[AdBlocker] Initialized - Full protection enabled');
 }
