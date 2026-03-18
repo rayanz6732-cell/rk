@@ -10,7 +10,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import AnimeDetail from './pages/AnimeDetail';
-import Watch from './pages/Watch';
+import Watch from './pages/Watch.jsx';
 import Profile from './pages/Profile';
 import SeasonalCalendar from './pages/SeasonalCalendar';
 
