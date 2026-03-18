@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
@@ -7,64 +7,55 @@ import HeroBanner from '../components/anime/HeroBanner';
 import AnimeSection from '../components/anime/AnimeSection';
 import TrendingSidebar from '../components/anime/TrendingSidebar';
 import { Loader2, Play } from 'lucide-react';
-
 import SignupSection from '../components/anime/SignupSection.jsx';
 
 export default function Home() {
-  // Continue watching from localStorage (no API calls - use saved metadata)
-  const continueWatching = useMemo(() => {
+  const [continueWatching, setContinueWatching] = useState([]);
+
+  useEffect(() => {
+    // Get all watch history from localStorage
     const allKeys = Object.keys(localStorage).filter(key => key.startsWith('rk_progress_'));
-    const seen = new Set();
-    return allKeys.map(key => {
-      const match = key.match(/rk_progress_(\d+)_ep(\d+)/);
-      if (!match) return null;
-      const mal_id = parseInt(match[1]);
-      if (seen.has(mal_id)) return null;
-      seen.add(mal_id);
-      const meta = JSON.parse(localStorage.getItem(`rk_meta_${mal_id}`) || '{}');
-      return {
-        mal_id,
-        episode: parseInt(match[2]),
-        title: meta.title || `Anime ${mal_id}`,
-        cover_image: meta.cover_image || `https://img.anili.st/media/${mal_id}`,
-      };
-    }).filter(Boolean).slice(0, 6);
+    const watching = allKeys.map(key => {
+      const [, mal_id, epStr] = key.match(/rk_progress_(\d+)_ep(\d+)/) || [];
+      return { mal_id: parseInt(mal_id), episode: parseInt(epStr) };
+    }).filter(item => item.mal_id);
+
+    // Get unique anime IDs and fetch their details
+    const uniqueIds = [...new Set(watching.map(w => w.mal_id))].slice(0, 6);
+    if (uniqueIds.length > 0) {
+      Promise.all(
+        uniqueIds.map(id => JikanAPI.getById(id))
+      ).then(results => {
+        setContinueWatching(results.filter(Boolean));
+      });
+    }
   }, []);
 
-  // Primary data — load top airing first (used for hero + trending)
+  const { data: currentSeason, isLoading: loadingSeason } = useQuery({
+    queryKey: ['current-season'],
+    queryFn: () => JikanAPI.getCurrentSeason(),
+    staleTime: 1000 * 60 * 15, // 15 min cache
+  });
+
   const { data: topAiring, isLoading: loadingTop } = useQuery({
     queryKey: ['top-airing'],
     queryFn: () => JikanAPI.getTopAiring(),
-    staleTime: 1000 * 60 * 20,
-    gcTime: 1000 * 60 * 60,
+    staleTime: 1000 * 60 * 15,
   });
 
-  // Secondary data — deferred so they don't compete with topAiring
-  const { data: currentSeason } = useQuery({
-    queryKey: ['current-season'],
-    queryFn: () => JikanAPI.getCurrentSeason(),
-    staleTime: 1000 * 60 * 20,
-    gcTime: 1000 * 60 * 60,
-    enabled: !loadingTop, // wait for primary
-  });
-
-  const { data: mostPopular } = useQuery({
+  const { data: mostPopular, isLoading: loadingPopular } = useQuery({
     queryKey: ['most-popular'],
     queryFn: () => JikanAPI.getMostPopular(),
     staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60,
-    enabled: !loadingTop,
   });
 
   const { data: upcoming } = useQuery({
     queryKey: ['upcoming'],
     queryFn: () => JikanAPI.getTopUpcoming(),
     staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60,
-    enabled: !loadingTop,
   });
 
-  const isLoading = loadingTop;
+  const isLoading = loadingSeason && loadingTop;
 
   if (isLoading) {
     return (

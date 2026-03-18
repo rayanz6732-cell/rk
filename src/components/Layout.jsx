@@ -21,13 +21,13 @@ export default function Layout() {
   const hideFooter = HIDE_FOOTER_PAGES.some(p => location.pathname.startsWith(p));
 
   useEffect(() => {
-    // Apply cherry blossom immediately before async user load to avoid flash
-    applyTheme(THEMES.find(t => t.id === 'cherry'));
     const loadTheme = async () => {
       const user = await base44.auth.me();
-      const themeId = user?.theme || 'cherry';
+      const themeId = user?.theme || 'default';
       const theme = THEMES.find(t => t.id === themeId);
-      if (theme) applyTheme(theme);
+      if (theme) {
+        applyTheme(theme);
+      }
     };
     loadTheme();
   }, []);
@@ -98,7 +98,7 @@ export default function Layout() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.1, ease: 'easeOut' }}
+            transition={{ duration: 0.18, ease: 'easeInOut' }}
           >
             <Outlet />
           </motion.div>
