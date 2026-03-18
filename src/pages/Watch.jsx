@@ -154,26 +154,33 @@ export default function Watch() {
             {server === 'animekai' && animeKaiLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
                 <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                <p className="text-zinc-400 text-sm">Loading AnimeKai...</p>
+                <p className="text-zinc-400 text-sm">Finding episode on AnimeKai...</p>
               </div>
             )}
-            {server === 'animekai' && !animeKaiLoading && !animeKaiUrl && (
+            {server === 'animekai' && !animeKaiLoading && !animeKaiSlug && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
                 <p className="text-zinc-400 text-sm">Not found on AnimeKai. Try another server.</p>
               </div>
             )}
             {embedUrl && (
-              <iframe
-                ref={iframeRef}
-                key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
-                src={embedUrl}
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-                frameBorder="0"
-                title={`${title} Episode ${ep}`}
-              />
+              <>
+                <iframe
+                  ref={iframeRef}
+                  key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
+                  src={embedUrl}
+                  className="absolute inset-0 w-full h-full"
+                  allowFullScreen
+                  allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                  sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+                  frameBorder="0"
+                  title={`${title} Episode ${ep}`}
+                />
+                {server === 'animekai' && !animeKaiLoading && animeKaiSlug && (
+                  <div className="absolute top-2 left-2 bg-emerald-500/90 text-black text-[10px] font-bold px-2 py-1 rounded-md pointer-events-none">
+                    Loaded from AnimeKai
+                  </div>
+                )}
+              </>
             )}
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
