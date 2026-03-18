@@ -11,8 +11,8 @@ import { Loader2, Play } from 'lucide-react';
 import SignupSection from '../components/anime/SignupSection.jsx';
 
 export default function Home() {
-  // Continue watching from localStorage (no API calls - use cached title from storage)
-  const continueWatching = React.useMemo(() => {
+  // Continue watching from localStorage (no API calls - use saved metadata)
+  const continueWatching = useMemo(() => {
     const allKeys = Object.keys(localStorage).filter(key => key.startsWith('rk_progress_'));
     const seen = new Set();
     return allKeys.map(key => {
@@ -21,7 +21,13 @@ export default function Home() {
       const mal_id = parseInt(match[1]);
       if (seen.has(mal_id)) return null;
       seen.add(mal_id);
-      return { mal_id, episode: parseInt(match[2]) };
+      const meta = JSON.parse(localStorage.getItem(`rk_meta_${mal_id}`) || '{}');
+      return {
+        mal_id,
+        episode: parseInt(match[2]),
+        title: meta.title || `Anime ${mal_id}`,
+        cover_image: meta.cover_image || `https://img.anili.st/media/${mal_id}`,
+      };
     }).filter(Boolean).slice(0, 6);
   }, []);
 

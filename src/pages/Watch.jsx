@@ -23,6 +23,10 @@ export default function Watch() {
   useEffect(() => {
     JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
     recordWatchActivity().catch(() => {});
+    // Save metadata for Continue Watching
+    const metaKey = `rk_meta_${mal_id}`;
+    const coverImage = `https://img.anili.st/media/${mal_id}`;
+    localStorage.setItem(metaKey, JSON.stringify({ title, cover_image: coverImage, mal_id }));
   }, [mal_id, ep]);
 
   useEffect(() => {
