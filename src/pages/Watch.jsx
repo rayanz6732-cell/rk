@@ -61,6 +61,8 @@ export default function Watch() {
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
 
+  const isAnimeKai = server === 'animekai';
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
       {/* Top bar */}
