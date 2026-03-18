@@ -60,7 +60,7 @@ export default function Watch() {
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : server === '2embed'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : `https://animepahe.ru/play/${mal_id}/${ep}`;
+    : `https://vidsrc.me/embed/anime?mal=${mal_id}&episode=${ep}`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
