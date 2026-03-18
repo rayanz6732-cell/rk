@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Mic, Captions, Play } from 'lucide-react';
+import { ArrowLeft, Mic, Captions, Play, RotateCw } from 'lucide-react';
 import { JikanAPI } from '../lib/jikan';
 import CommentsSection from '../components/anime/CommentsSection';
 import { recordWatchActivity } from '../lib/streakAndBadges';
@@ -21,10 +21,23 @@ export default function Watch() {
   const [episodes, setEpisodes] = useState([]);
   const iframeRef = useRef(null);
 
-  useEffect(() => {
-    if (mal_id) {
-      JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchEpisodes = async () => {
+    if (!mal_id) return;
+    setRefreshing(true);
+    try {
+      const data = await JikanAPI.getEpisodes(mal_id);
+      setEpisodes(data?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch episodes:', err);
+    } finally {
+      setRefreshing(false);
     }
+  };
+
+  useEffect(() => {
+    fetchEpisodes();
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
 
@@ -155,7 +168,17 @@ export default function Watch() {
               if (!nextEps.length) return null;
               return (
                 <div className="mt-5">
-                  <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-3">Up Next</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Up Next</h3>
+                    <button
+                      onClick={fetchEpisodes}
+                      disabled={refreshing}
+                      className="text-xs text-zinc-600 hover:text-emerald-500 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <RotateCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {nextEps.map(e => {
                       const thumb = e.images?.jpg?.image_url;
