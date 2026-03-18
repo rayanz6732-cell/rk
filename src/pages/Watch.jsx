@@ -151,17 +151,30 @@ export default function Watch() {
         {/* Video + info */}
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-            <iframe
-              ref={iframeRef}
-              key={`${mal_id}-${ep}-${audioType}-${server}`}
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-              frameBorder="0"
-              title={`${title} Episode ${ep}`}
-            />
+            {server === 'animekai' && animeKaiLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
+                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                <p className="text-zinc-400 text-sm">Loading AnimeKai...</p>
+              </div>
+            )}
+            {server === 'animekai' && !animeKaiLoading && !animeKaiUrl && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
+                <p className="text-zinc-400 text-sm">Not found on AnimeKai. Try another server.</p>
+              </div>
+            )}
+            {embedUrl && (
+              <iframe
+                ref={iframeRef}
+                key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full"
+                allowFullScreen
+                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+                frameBorder="0"
+                title={`${title} Episode ${ep}`}
+              />
+            )}
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
