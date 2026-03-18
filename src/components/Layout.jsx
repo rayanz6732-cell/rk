@@ -21,13 +21,13 @@ export default function Layout() {
   const hideFooter = HIDE_FOOTER_PAGES.some(p => location.pathname.startsWith(p));
 
   useEffect(() => {
+    // Apply cherry blossom immediately before async user load to avoid flash
+    applyTheme(THEMES.find(t => t.id === 'cherry'));
     const loadTheme = async () => {
       const user = await base44.auth.me();
-      const themeId = user?.theme || 'default';
+      const themeId = user?.theme || 'cherry';
       const theme = THEMES.find(t => t.id === themeId);
-      if (theme) {
-        applyTheme(theme);
-      }
+      if (theme) applyTheme(theme);
     };
     loadTheme();
   }, []);
