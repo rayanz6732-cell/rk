@@ -28,6 +28,23 @@ export default function Watch() {
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
 
+  // Fetch AnimeKai URL when that server is selected
+  useEffect(() => {
+    if (server !== 'animekai') return;
+    setAnimeKaiUrl(null);
+    setAnimeKaiLoading(true);
+    base44.functions.invoke('animeKaiScraper', {
+      mal_id: parseInt(mal_id),
+      episode: parseInt(ep),
+      type: audioType,
+      title,
+    }).then(res => {
+      setAnimeKaiUrl(res?.data?.watch_url || null);
+    }).catch(() => {
+      setAnimeKaiUrl(null);
+    }).finally(() => setAnimeKaiLoading(false));
+  }, [server, mal_id, ep, audioType]);
+
   useEffect(() => {
     // Block ads on the video player iframe
     if (iframeRef.current) {
