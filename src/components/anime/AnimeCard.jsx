@@ -1,11 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Play, Star } from 'lucide-react';
 
 
 export default function AnimeCard({ anime }) {
+  const navigate = useNavigate();
   return (
-    <Link to={`/AnimeDetail?id=${anime.mal_id || anime.id}`} className="group relative block">
+    <div onClick={() => navigate(`/AnimeDetail?id=${anime.mal_id || anime.id}`)} className="group relative block cursor-pointer">
       <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900">
         {anime.cover_image ? (
           <img

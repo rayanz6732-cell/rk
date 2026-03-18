@@ -14,9 +14,9 @@ import StarRating from '../components/anime/StarRating';
 import SeasonCard from '../components/anime/SeasonCard';
 
 export default function AnimeDetail() {
-  const { search } = window.location;
-  const urlParams = new URLSearchParams(search);
-  const mal_id = urlParams.get('id');
+  const [searchParams] = useSearchParams();
+  const mal_id = searchParams.get('id');
+  const navigate = useNavigate();
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [epPage, setEpPage] = useState(1);
   const [epJump, setEpJump] = useState('');
