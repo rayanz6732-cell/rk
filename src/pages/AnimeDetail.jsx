@@ -51,15 +51,34 @@ export default function AnimeDetail() {
 
   const { data: relations } = useQuery({
     queryKey: ['anime-relations', mal_id],
-    queryFn: () => JikanAPI.getRelations(mal_id),
+    queryFn: async () => {
+      // Recursively fetch all sequels in the chain
+      const visited = new Set([String(mal_id)]);
+      const allSequels = [];
+      const queue = [mal_id];
+
+      while (queue.length > 0) {
+        const currentId = queue.shift();
+        const data = await JikanAPI.getRelations(currentId);
+        const sequels = (data || [])
+          .filter(r => r.relation === 'Sequel')
+          .flatMap(r => r.entry.filter(e => e.type === 'anime'));
+        
+        for (const s of sequels) {
+          if (!visited.has(String(s.mal_id))) {
+            visited.add(String(s.mal_id));
+            allSequels.push(s);
+            queue.push(s.mal_id);
+          }
+        }
+      }
+      return allSequels;
+    },
     enabled: !!mal_id,
     staleTime: 1000 * 60 * 30,
   });
 
-  // Extract only sequels (other seasons), no prequels/movies/summaries
-  const seasonEntries = (relations || [])
-    .filter(r => r.relation === 'Sequel')
-    .flatMap(r => r.entry.filter(e => e.type === 'anime').map(e => ({ ...e, relation: r.relation })));
+  const seasonEntries = relations || [];
 
   const { data: episodes } = useQuery({
     queryKey: ['anime-eps', mal_id, epPage],
