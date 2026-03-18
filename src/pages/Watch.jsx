@@ -19,6 +19,8 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
+  const [s3Loading, setS3Loading] = useState(false);
+  const [s3Src, setS3Src] = useState(null);
   const iframeRef = useRef(null);
 
   useEffect(() => {
@@ -59,7 +61,9 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  const embedUrl = server === 'vidsrc'
+  const embedUrl = server === 's3'
+    ? s3Src
+    : server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
 
@@ -97,6 +101,21 @@ export default function Watch() {
             >
               S2
             </button>
+            <button
+              onClick={() => {
+                setServer('s3');
+                setS3Loading(true);
+                base44.functions.invoke('animeStreamScraper', { title, episode: ep })
+                  .then(res => setS3Src(res.data?.src))
+                  .finally(() => setS3Loading(false));
+              }}
+              disabled={s3Loading}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                server === 's3' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              } disabled:opacity-50`}
+            >
+              {s3Loading ? '...' : 'S3'}
+            </button>
           </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
@@ -124,7 +143,15 @@ export default function Watch() {
         {/* Video + info */}
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-            <iframe
+            {server === 's3' && s3Loading ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full mx-auto mb-3" />
+                  <p className="text-zinc-400 text-sm">Loading stream...</p>
+                </div>
+              </div>
+            ) : (
+              <iframe
                 ref={iframeRef}
                 key={`${mal_id}-${ep}-${audioType}-${server}`}
                 src={embedUrl}
@@ -135,6 +162,7 @@ export default function Watch() {
                 frameBorder="0"
                 title={`${title} Episode ${ep}`}
               />
+            )}
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
