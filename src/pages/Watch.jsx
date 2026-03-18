@@ -19,7 +19,7 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
-  const [animeKaiUrl, setAnimeKaiUrl] = useState(null);
+  const [animeKaiSlug, setAnimeKaiSlug] = useState(null);
   const [animeKaiLoading, setAnimeKaiLoading] = useState(false);
   const iframeRef = useRef(null);
 
@@ -28,10 +28,10 @@ export default function Watch() {
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
 
-  // Fetch AnimeKai URL when that server is selected
+  // Fetch AnimeKai slug when that server is selected
   useEffect(() => {
     if (server !== 'animekai') return;
-    setAnimeKaiUrl(null);
+    setAnimeKaiSlug(null);
     setAnimeKaiLoading(true);
     base44.functions.invoke('animeKaiScraper', {
       mal_id: parseInt(mal_id),
@@ -39,9 +39,9 @@ export default function Watch() {
       type: audioType,
       title,
     }).then(res => {
-      setAnimeKaiUrl(res?.data?.watch_url || null);
+      setAnimeKaiSlug(res?.data?.slug || null);
     }).catch(() => {
-      setAnimeKaiUrl(null);
+      setAnimeKaiSlug(null);
     }).finally(() => setAnimeKaiLoading(false));
   }, [server, mal_id, ep, audioType]);
 
