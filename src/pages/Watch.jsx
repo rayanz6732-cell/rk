@@ -22,7 +22,9 @@ export default function Watch() {
   const iframeRef = useRef(null);
 
   useEffect(() => {
-    JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
+    if (mal_id) {
+      JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
+    }
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
 
