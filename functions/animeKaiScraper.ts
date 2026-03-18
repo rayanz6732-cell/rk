@@ -13,9 +13,11 @@ Deno.serve(async (req) => {
   const audioType = type || 'sub'; // sub or dub
 
   try {
-    // Step 1: Fetch the AnimeKai page directly by MAL ID via their search
-    // AnimeKai pages store data-mal-id in the HTML — we search to find the slug
-    const searchRes = await fetch(`https://animekai.to/ajax/anime/search?keyword=${encodeURIComponent(String(mal_id))}`, {
+    // Step 1: Search AnimeKai by title, then verify by MAL ID on the anime page
+    const { title } = await req.json().catch(() => ({}));
+    const searchKeyword = title || String(mal_id);
+
+    const searchRes = await fetch(`https://animekai.to/ajax/anime/search?keyword=${encodeURIComponent(searchKeyword)}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'X-Requested-With': 'XMLHttpRequest',
@@ -30,13 +32,30 @@ Deno.serve(async (req) => {
     const searchData = await searchRes.json();
     const html = searchData?.result?.html || '';
 
-    // Extract the first watch URL from the HTML: href="/watch/slug"
-    const slugMatch = html.match(/href="\/watch\/([^"]+)"/);
-    if (!slugMatch) {
+    // Extract all watch slugs from the search results
+    const slugMatches = [...html.matchAll(/href="\/watch\/([^"]+)"/g)].map(m => m[1]);
+    if (!slugMatches.length) {
       return Response.json({ error: 'Anime not found on AnimeKai' }, { status: 404 });
     }
 
-    const slug = slugMatch[1]; // e.g. "one-piece-dk6r"
+    // Find the correct anime by checking data-mal-id on each candidate page
+    let slug = null;
+    for (const candidate of slugMatches.slice(0, 5)) {
+      const pageRes = await fetch(`https://animekai.to/watch/${candidate}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
+      if (!pageRes.ok) continue;
+      const pageHtml = await pageRes.text();
+      if (pageHtml.includes(`data-mal-id="${mal_id}"`)) {
+        slug = candidate;
+        break;
+      }
+    }
+
+    if (!slug) {
+      return Response.json({ error: 'Anime not found on AnimeKai (MAL ID mismatch)' }, { status: 404 });
+    }
+
     const animeId = slug.split('-').pop(); // e.g. "dk6r"
 
     // Step 2: Get episode list to find the ep_id token
