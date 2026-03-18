@@ -344,6 +344,37 @@ export default function AnimeDetail() {
           </div>
         )}
 
+        {/* Other Seasons / Related */}
+        {seasonEntries.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-xl font-bold text-white mb-4">More Seasons & Related</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {seasonEntries.map((entry) => (
+                <Link
+                  key={entry.mal_id}
+                  to={`/AnimeDetail?id=${entry.mal_id}`}
+                  className="group bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 rounded-xl overflow-hidden transition-all"
+                >
+                  <div className="aspect-[3/4] bg-zinc-800 relative overflow-hidden">
+                    <img
+                      src={`https://img.anili.st/media/${entry.mal_id}`}
+                      alt={entry.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                      <span className="text-[10px] font-bold text-emerald-400 uppercase">{entry.relation}</span>
+                    </div>
+                  </div>
+                  <div className="p-2">
+                    <p className="text-xs text-zinc-300 font-medium line-clamp-2 group-hover:text-emerald-400 transition-colors">{entry.name}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Recommendations */}
         {recommendations?.length > 0 && (
           <div className="mt-12 mb-8">
