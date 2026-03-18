@@ -5,7 +5,7 @@ import { JikanAPI } from '../lib/jikan';
 import CommentsSection from '../components/anime/CommentsSection';
 import { recordWatchActivity } from '../lib/streakAndBadges';
 import { blockIframeAds } from '../lib/adBlocker';
-import AnimeKaiPlayer from '../components/anime/AnimeKaiPlayer';
+import AnimeKaiPlayer from '../components/anime/AnimeKaiPlayer.jsx';
 
 export default function Watch() {
   const [searchParams] = useSearchParams();
