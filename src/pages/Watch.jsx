@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Mic, Captions, Play } from 'lucide-react';
 import { JikanAPI } from '../lib/jikan';
 import CommentsSection from '../components/anime/CommentsSection';
@@ -20,9 +19,6 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
-  const [s3Loading, setS3Loading] = useState(false);
-  const [s3Src, setS3Src] = useState(null);
-  const [s3Error, setS3Error] = useState(null);
 
   const iframeRef = useRef(null);
 
@@ -64,11 +60,11 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  const embedUrl = server === 's3' && s3Src
-    ? s3Src
-    : server === 'vidsrc'
+  const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
-    : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
+    : server === '2embed'
+    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
+    : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=1&ads=false`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
@@ -105,29 +101,12 @@ export default function Watch() {
               S2
             </button>
             <button
-              onClick={() => {
-                if (server !== 's3') {
-                  setServer('s3');
-                  setS3Loading(true);
-                  setS3Error(null);
-                  base44.functions.invoke('animeStreamScraper', { title, episode: ep })
-                    .then(res => {
-                      setS3Src(res.data?.src);
-                      setS3Error(null);
-                    })
-                    .catch(err => {
-                      setS3Error(err.response?.data?.error || 'Failed to load stream');
-                      setServer('vidsrc');
-                    })
-                    .finally(() => setS3Loading(false));
-                }
-              }}
-              disabled={s3Loading}
+              onClick={() => setServer('s3')}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 server === 's3' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-              } disabled:opacity-50`}
+              }`}
             >
-              {s3Loading ? '...' : 'S3'}
+              S3
             </button>
           </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
@@ -156,37 +135,17 @@ export default function Watch() {
         {/* Video + info */}
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-            {server === 's3' && s3Loading ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin w-8 h-8 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full mx-auto mb-3" />
-                  <p className="text-zinc-400 text-sm">Searching anime sites...</p>
-                </div>
-              </div>
-            ) : server === 's3' && s3Error ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <div className="text-red-500 text-sm font-medium">Episode not found</div>
-                <p className="text-zinc-500 text-xs text-center max-w-xs">{s3Error}</p>
-                <button
-                  onClick={() => setServer('vidsrc')}
-                  className="text-emerald-500 text-xs hover:text-emerald-400 underline"
-                >
-                  Try Server 1
-                </button>
-              </div>
-            ) : (
-              <iframe
-                ref={iframeRef}
-                key={`${mal_id}-${ep}-${audioType}-${server}`}
-                src={embedUrl}
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-                frameBorder="0"
-                title={`${title} Episode ${ep}`}
-              />
-            )}
+            <iframe
+              ref={iframeRef}
+              key={`${mal_id}-${ep}-${audioType}-${server}`}
+              src={embedUrl}
+              className="absolute inset-0 w-full h-full"
+              allowFullScreen
+              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+              frameBorder="0"
+              title={`${title} Episode ${ep}`}
+            />
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
