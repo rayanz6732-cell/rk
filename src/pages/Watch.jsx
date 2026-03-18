@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Mic, Captions, Play, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mic, Captions, Play } from 'lucide-react';
 import { JikanAPI } from '../lib/jikan';
 import CommentsSection from '../components/anime/CommentsSection';
 import { recordWatchActivity } from '../lib/streakAndBadges';
 import { blockIframeAds } from '../lib/adBlocker';
-import { base44 } from '@/api/base44Client';
 
 export default function Watch() {
   const [searchParams] = useSearchParams();
@@ -19,31 +18,12 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
-  const [animeKaiUrl, setAnimeKaiUrl] = useState(null);
-  const [animeKaiLoading, setAnimeKaiLoading] = useState(false);
   const iframeRef = useRef(null);
 
   useEffect(() => {
     JikanAPI.getEpisodes(mal_id).then(data => setEpisodes(data?.data || []));
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
-
-  // Fetch AnimeKai URL when that server is selected
-  useEffect(() => {
-    if (server !== 'animekai') return;
-    setAnimeKaiUrl(null);
-    setAnimeKaiLoading(true);
-    base44.functions.invoke('animeKaiScraper', {
-      mal_id: parseInt(mal_id),
-      episode: parseInt(ep),
-      type: audioType,
-      title,
-    }).then(res => {
-      setAnimeKaiUrl(res?.data?.watch_url || null);
-    }).catch(() => {
-      setAnimeKaiUrl(null);
-    }).finally(() => setAnimeKaiLoading(false));
-  }, [server, mal_id, ep, audioType]);
 
   useEffect(() => {
     // Block ads on the video player iframe
@@ -76,9 +56,7 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  const embedUrl = server === 'animekai'
-    ? animeKaiUrl
-    : server === 'vidsrc'
+  const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
 
@@ -116,14 +94,6 @@ export default function Watch() {
             >
               S2
             </button>
-            <button
-              onClick={() => setServer('animekai')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === 'animekai' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              S3
-            </button>
           </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
@@ -151,30 +121,17 @@ export default function Watch() {
         {/* Video + info */}
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-            {server === 'animekai' && animeKaiLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
-                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                <p className="text-zinc-400 text-sm">Loading AnimeKai...</p>
-              </div>
-            )}
-            {server === 'animekai' && !animeKaiLoading && !animeKaiUrl && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
-                <p className="text-zinc-400 text-sm">Not found on AnimeKai. Try another server.</p>
-              </div>
-            )}
-            {embedUrl && (
-              <iframe
-                ref={iframeRef}
-                key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
-                src={embedUrl}
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-                frameBorder="0"
-                title={`${title} Episode ${ep}`}
-              />
-            )}
+            <iframe
+              ref={iframeRef}
+              key={`${mal_id}-${ep}-${audioType}-${server}`}
+              src={embedUrl}
+              className="absolute inset-0 w-full h-full"
+              allowFullScreen
+              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+              frameBorder="0"
+              title={`${title} Episode ${ep}`}
+            />
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
