@@ -58,7 +58,7 @@ export default function AnimeKaiPlayer({ mal_id, episode, audioType, animeTitle 
       allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
       sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
       frameBorder="0"
-      title="AnimeKai Player"
+      title="Anime Player"
     />
   ) : (
     <video
