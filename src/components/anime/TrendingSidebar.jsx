@@ -17,7 +17,7 @@ export default function TrendingSidebar({ trending }) {
       <div className="space-y-3">
         {trending.map((anime, index) => (
           <Link
-            key={anime.id}
+            key={anime.mal_id || anime.id}
             to={`/AnimeDetail?id=${anime.mal_id || anime.id}`}
             className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-800/60 transition-colors group"
           >
