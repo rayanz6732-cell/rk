@@ -58,9 +58,7 @@ export default function Watch() {
 
   const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
-    : server === '2embed'
-    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : `https://vidsrc.me/embed/anime?mal=${mal_id}&episode=${ep}`;
+    : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
@@ -95,14 +93,6 @@ export default function Watch() {
               }`}
             >
               S2
-            </button>
-            <button
-              onClick={() => setServer('s3')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === 's3' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              S3
             </button>
           </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
