@@ -30,7 +30,7 @@ export default function AnimeKaiPlayer({ mal_id, episode, audioType, animeTitle 
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-3">
         <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
-        <p className="text-zinc-400 text-sm">Loading AnimeKai stream...</p>
+        <p className="text-zinc-400 text-sm">Loading stream...</p>
       </div>
     );
   }
@@ -39,7 +39,7 @@ export default function AnimeKaiPlayer({ mal_id, episode, audioType, animeTitle 
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-3 px-6 text-center">
         <AlertCircle className="w-10 h-10 text-red-500" />
-        <p className="text-zinc-300 text-sm font-medium">AnimeKai stream unavailable</p>
+        <p className="text-zinc-300 text-sm font-medium">Stream unavailable</p>
         <p className="text-zinc-600 text-xs">{error}</p>
         <p className="text-zinc-600 text-xs">Try Server 1 or Server 2</p>
       </div>
