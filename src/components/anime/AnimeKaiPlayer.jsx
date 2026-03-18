@@ -16,7 +16,6 @@ export default function AnimeKaiPlayer({ mal_id, episode, audioType, animeTitle 
       mal_id,
       episode,
       audio_type: audioType,
-      anime_title: animeTitle,
     })
       .then(res => {
         const src = res.data?.src;
