@@ -128,6 +128,12 @@ export const JikanAPI = {
     return data.data?.slice(0, 12) || [];
   },
 
+  // Get related anime (sequels, prequels, other seasons)
+  async getRelations(mal_id) {
+    const data = await jikanFetch(`/anime/${mal_id}/relations`);
+    return data.data || [];
+  },
+
   // Get recommendations for an anime
   async getRecommendations(mal_id) {
     const data = await jikanFetch(`/anime/${mal_id}/recommendations`);

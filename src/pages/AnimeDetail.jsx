@@ -48,6 +48,18 @@ export default function AnimeDetail() {
     staleTime: 1000 * 60 * 30,
   });
 
+  const { data: relations } = useQuery({
+    queryKey: ['anime-relations', mal_id],
+    queryFn: () => JikanAPI.getRelations(mal_id),
+    enabled: !!mal_id,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  // Extract sequel/prequel/other season entries
+  const seasonEntries = (relations || [])
+    .filter(r => ['Sequel', 'Prequel', 'Alternative version', 'Side story', 'Parent story', 'Full story', 'Summary'].includes(r.relation))
+    .flatMap(r => r.entry.filter(e => e.type === 'anime').map(e => ({ ...e, relation: r.relation })));
+
   const { data: episodes } = useQuery({
     queryKey: ['anime-eps', mal_id, epPage],
     queryFn: () => JikanAPI.getEpisodes(mal_id, epPage),
