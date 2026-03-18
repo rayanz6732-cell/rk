@@ -19,7 +19,6 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
-
   const iframeRef = useRef(null);
 
   useEffect(() => {
@@ -62,9 +61,7 @@ export default function Watch() {
 
   const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
-    : server === '2embed'
-    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=1&ads=false`;
+    : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
@@ -100,14 +97,6 @@ export default function Watch() {
             >
               S2
             </button>
-            <button
-              onClick={() => setServer('s3')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === 's3' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              S3
-            </button>
           </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
           <button
@@ -136,16 +125,16 @@ export default function Watch() {
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
             <iframe
-              ref={iframeRef}
-              key={`${mal_id}-${ep}-${audioType}-${server}`}
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-              frameBorder="0"
-              title={`${title} Episode ${ep}`}
-            />
+                ref={iframeRef}
+                key={`${mal_id}-${ep}-${audioType}-${server}`}
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full"
+                allowFullScreen
+                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+                frameBorder="0"
+                title={`${title} Episode ${ep}`}
+              />
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
