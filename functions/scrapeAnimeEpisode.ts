@@ -9,26 +9,26 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { mal_id, episode } = await req.json();
+    const { mal_id, episode, audio_type } = await req.json();
 
     if (!mal_id || !episode) {
       return Response.json({ error: 'Missing mal_id or episode' }, { status: 400 });
     }
 
-    // Try multiple sources and return first working one
-    const sources = [
-      () => scrapeVidplay(mal_id, episode),
-      () => scrapeVidstream(mal_id, episode),
-      () => scrapeEmbedly(mal_id, episode),
-    ];
+    // Try Zoro first (fast updates, good quality)
+    const zoro = await scrapeZoro(mal_id, episode, audio_type);
+    if (zoro) return Response.json(zoro);
 
-    for (const source of sources) {
-      const result = await source();
-      if (result?.src) return Response.json(result);
-    }
+    // Try Gogoanime as fallback
+    const gogo = await scrapeGogoanime(mal_id, episode, audio_type);
+    if (gogo) return Response.json(gogo);
+
+    // Try Animixplay as secondary fallback
+    const animix = await scrapeAnimixplay(mal_id, episode, audio_type);
+    if (animix) return Response.json(animix);
 
     return Response.json({ 
-      error: 'Episode not found',
+      error: 'Episode not found on any source',
       src: null 
     }, { status: 404 });
   } catch (error) {
@@ -37,56 +37,77 @@ Deno.serve(async (req) => {
   }
 });
 
-async function scrapeVidplay(mal_id, episode) {
+async function scrapeZoro(mal_id, episode, audioType) {
   try {
-    const url = `https://vidplay.online/rapi/source/search?query=mal_id:${mal_id}%20ep:${episode}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    const res = await fetch(`https://zoro.to/search?keyword=mal_id:${mal_id}`);
+    const html = await res.text();
     
-    if (data.result && data.result.length > 0) {
-      return { src: data.result[0].url };
-    }
-    return null;
+    // Parse and extract anime URL
+    const match = html.match(/href="([^"]*\/anime\/[^"]+)"/);
+    if (!match) return null;
+
+    const animeUrl = `https://zoro.to${match[1]}`;
+    const epRes = await fetch(`${animeUrl}?ep=${episode}`);
+    const epHtml = await epRes.text();
+
+    // Extract embed URL
+    const embedMatch = epHtml.match(/src="([^"]*(?:rapidcloud|filemoon)[^"]*)"/);
+    if (!embedMatch) return null;
+
+    return { src: embedMatch[1] };
   } catch (err) {
-    console.error('Vidplay failed:', err);
+    console.error('Zoro scrape failed:', err);
     return null;
   }
 }
 
-async function scrapeVidstream(mal_id, episode) {
+async function scrapeGogoanime(mal_id, episode, audioType) {
   try {
-    const streamUrl = `https://vidstream.pro/anime/${mal_id}/episode/${episode}`;
-    const res = await fetch(streamUrl);
-    
-    if (res.ok) {
-      const html = await res.text();
-      const srcMatch = html.match(/src\s*=\s*["']([^"']*\.m3u8[^"']*)["']/);
-      if (srcMatch) {
-        return { src: srcMatch[1] };
-      }
-    }
-    return null;
+    const res = await fetch(`https://gogoanime.bid/?s=${mal_id}`);
+    const html = await res.text();
+
+    // Extract anime slug
+    const slugMatch = html.match(/href="([^"]*\/category\/[^"]+)"/);
+    if (!slugMatch) return null;
+
+    const animeUrl = slugMatch[1];
+    const epNum = String(episode).padStart(5, '0');
+    const epUrl = `${animeUrl}-episode-${episode}`;
+
+    const epRes = await fetch(epUrl);
+    const epHtml = await epRes.text();
+
+    // Extract stream iframe
+    const iframeMatch = epHtml.match(/src="([^"]*(?:goload|vidcdn)[^"]*)"/);
+    if (!iframeMatch) return null;
+
+    return { src: iframeMatch[1] };
   } catch (err) {
-    console.error('Vidstream failed:', err);
+    console.error('Gogoanime scrape failed:', err);
     return null;
   }
 }
 
-async function scrapeEmbedly(mal_id, episode) {
+async function scrapeAnimixplay(mal_id, episode, audioType) {
   try {
-    const streamUrl = `https://embedfly.org/anime/${mal_id}/${episode}`;
-    const res = await fetch(streamUrl);
-    
-    if (res.ok) {
-      const html = await res.text();
-      const srcMatch = html.match(/src\s*=\s*["']([^"']*)["']/);
-      if (srcMatch) {
-        return { src: srcMatch[1] };
-      }
-    }
-    return null;
+    const res = await fetch(`https://animixplay.to/?q=${mal_id}`);
+    const html = await res.text();
+
+    // Extract anime link
+    const linkMatch = html.match(/href="([^"]*\/anime\/[^"]+)"/);
+    if (!linkMatch) return null;
+
+    const animeUrl = `https://animixplay.to${linkMatch[1]}`;
+    const epRes = await fetch(`${animeUrl}?ep=${episode}`);
+    const epHtml = await epRes.text();
+
+    // Extract player embed
+    const playerMatch = epHtml.match(/src="([^"]*player[^"]*)"/);
+    if (!playerMatch) return null;
+
+    return { src: playerMatch[1] };
   } catch (err) {
-    console.error('Embedly failed:', err);
+    console.error('Animixplay scrape failed:', err);
     return null;
   }
 }
