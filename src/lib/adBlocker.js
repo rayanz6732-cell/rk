@@ -224,11 +224,11 @@ function isAdElement(element) {
   const id = element.id?.toLowerCase?.() || '';
   const dataAttrs = element.dataset || {};
   
-  const adKeywords = ['ad', 'ads', 'advert', 'banner', 'popup', 'popunder', 'overlay', 'float', 'sticky'];
-  
-  for (const keyword of adKeywords) {
-    if (classList.includes(keyword) || id.includes(keyword) || 
-        Object.values(dataAttrs).some(v => v?.includes?.(keyword))) {
+  // Use word-boundary matching to avoid false positives like "absolute", "shadow", "gradient"
+  const adClassPatterns = [/\bad\b/, /\bads\b/, /\badvert\b/, /\bbanner\b/, /\bpopup\b/, /\bpopunder\b/];
+
+  for (const pattern of adClassPatterns) {
+    if (pattern.test(classList) || pattern.test(id)) {
       return true;
     }
   }
