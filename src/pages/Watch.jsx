@@ -132,17 +132,27 @@ export default function Watch() {
         {/* Video + info */}
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-            <iframe
-              ref={iframeRef}
-              key={`${mal_id}-${ep}-${audioType}-${server}`}
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-              frameBorder="0"
-              title={`${title} Episode ${ep}`}
-            />
+            {isAnimeKai ? (
+              <AnimeKaiPlayer
+                key={`${mal_id}-${ep}-${audioType}`}
+                mal_id={mal_id}
+                episode={ep}
+                audioType={audioType}
+                animeTitle={title}
+              />
+            ) : (
+              <iframe
+                ref={iframeRef}
+                key={`${mal_id}-${ep}-${audioType}-${server}`}
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full"
+                allowFullScreen
+                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+                frameBorder="0"
+                title={`${title} Episode ${ep}`}
+              />
+            )}
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
