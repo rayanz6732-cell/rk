@@ -19,7 +19,7 @@ export default function Watch() {
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
-  const [animeKaiSlug, setAnimeKaiSlug] = useState(null);
+  const [animeKaiUrl, setAnimeKaiUrl] = useState(null);
   const [animeKaiLoading, setAnimeKaiLoading] = useState(false);
   const iframeRef = useRef(null);
 
@@ -28,10 +28,10 @@ export default function Watch() {
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
 
-  // Fetch AnimeKai slug when that server is selected
+  // Fetch AnimeKai URL when that server is selected
   useEffect(() => {
     if (server !== 'animekai') return;
-    setAnimeKaiSlug(null);
+    setAnimeKaiUrl(null);
     setAnimeKaiLoading(true);
     base44.functions.invoke('animeKaiScraper', {
       mal_id: parseInt(mal_id),
@@ -39,9 +39,9 @@ export default function Watch() {
       type: audioType,
       title,
     }).then(res => {
-      setAnimeKaiSlug(res?.data?.slug || null);
+      setAnimeKaiUrl(res?.data?.watch_url || null);
     }).catch(() => {
-      setAnimeKaiSlug(null);
+      setAnimeKaiUrl(null);
     }).finally(() => setAnimeKaiLoading(false));
   }, [server, mal_id, ep, audioType]);
 
@@ -77,7 +77,7 @@ export default function Watch() {
   }, [storageKey, resumeTime]);
 
   const embedUrl = server === 'animekai'
-    ? (animeKaiSlug ? `https://animekai.to/watch/${animeKaiSlug}#ep=${ep}` : null)
+    ? animeKaiUrl
     : server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
@@ -154,33 +154,26 @@ export default function Watch() {
             {server === 'animekai' && animeKaiLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
                 <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                <p className="text-zinc-400 text-sm">Finding episode on AnimeKai...</p>
+                <p className="text-zinc-400 text-sm">Loading AnimeKai...</p>
               </div>
             )}
-            {server === 'animekai' && !animeKaiLoading && !animeKaiSlug && (
+            {server === 'animekai' && !animeKaiLoading && !animeKaiUrl && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 gap-3">
                 <p className="text-zinc-400 text-sm">Not found on AnimeKai. Try another server.</p>
               </div>
             )}
             {embedUrl && (
-              <>
-                <iframe
-                  ref={iframeRef}
-                  key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
-                  src={embedUrl}
-                  className="absolute inset-0 w-full h-full"
-                  allowFullScreen
-                  allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-                  sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-                  frameBorder="0"
-                  title={`${title} Episode ${ep}`}
-                />
-                {server === 'animekai' && !animeKaiLoading && animeKaiSlug && (
-                  <div className="absolute top-2 left-2 bg-emerald-500/90 text-black text-[10px] font-bold px-2 py-1 rounded-md pointer-events-none">
-                    Loaded from AnimeKai
-                  </div>
-                )}
-              </>
+              <iframe
+                ref={iframeRef}
+                key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full"
+                allowFullScreen
+                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+                frameBorder="0"
+                title={`${title} Episode ${ep}`}
+              />
             )}
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
