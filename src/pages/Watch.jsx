@@ -76,7 +76,7 @@ export default function Watch() {
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : server === '2embed'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : `https://embed.su/embed/anime/${mal_id}/${ep}`;
+    : `https://vidsrc.to/embed/anime/${mal_id}/${ep}`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
@@ -113,9 +113,9 @@ export default function Watch() {
               S2
             </button>
             <button
-              onClick={() => setServer('s3')}
+              onClick={() => setServer('vidsrcto')}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === 's3' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+                server === 'vidsrcto' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               S3
