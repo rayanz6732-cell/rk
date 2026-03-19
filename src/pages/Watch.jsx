@@ -76,7 +76,9 @@ export default function Watch() {
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : server === '2embed'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : `https://vidsrc.to/embed/anime/${mal_id}/${ep}`;
+    : server === 'vidsrcto'
+    ? `https://vidsrc.to/embed/anime/${mal_id}/${ep}`
+    : `https://rk-scraper-production.up.railway.app/embed?title=${encodeURIComponent(title)}&ep=${ep}`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
@@ -119,6 +121,14 @@ export default function Watch() {
               }`}
             >
               S3
+            </button>
+            <button
+              onClick={() => setServer('animekai')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                server === 'animekai' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              S4
             </button>
           </div>
         <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
