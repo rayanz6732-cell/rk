@@ -248,7 +248,12 @@ export default function Profile() {
           </div>
         )}
 
+        {/* Admin Panel */}
+        {user && user.role === 'admin' && (
+          <AdminSyncPanel />
+        )}
+
         </div>
-        </div>
-        );
-        }
+      </div>
+    );
+}
