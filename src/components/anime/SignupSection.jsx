@@ -13,7 +13,8 @@ export default function SignupSection() {
     setMessage('');
 
     try {
-      await base44.users.inviteUser(email, 'user');
+      const res = await base44.functions.invoke('publicSignup', { email });
+      if (res.data?.error) throw new Error(res.data.error);
       setMessage('✓ Account created! Check your email to log in.');
       setEmail('');
     } catch (error) {
