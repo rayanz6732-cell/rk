@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { BADGES } from '../lib/streakAndBadges';
 import { Flame, Tv, Award, User, Clock, Calendar, Palette } from 'lucide-react';
+import AdminSyncPanel from '../components/anime/AdminSyncPanel';
 import { Link } from 'react-router-dom';
 
 const THEMES = [
