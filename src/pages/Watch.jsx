@@ -16,6 +16,7 @@ export default function Watch() {
 
   const [audioType, setAudioType] = useState('sub');
   const [server, setServer] = useState('vidsrc');
+  // S1: vidsrc.cc sub/dub, S2: vidsrc.cc source=2, S3: 2embed.cc, S4: smashy.stream
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
   const iframeRef = useRef(null);
