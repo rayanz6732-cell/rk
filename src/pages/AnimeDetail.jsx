@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
-import { AniwatchAPI } from '../lib/aniwatch';
-import { useQueryClient } from '@tanstack/react-query';
 import AnimeCard from '../components/anime/AnimeCard';
 import {
   ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv,
@@ -19,7 +17,6 @@ export default function AnimeDetail() {
   const [searchParams] = useSearchParams();
   const mal_id = searchParams.get('id');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [epPage, setEpPage] = useState(1);
   const [epJump, setEpJump] = useState('');
@@ -84,19 +81,11 @@ export default function AnimeDetail() {
   const seasonEntries = relations || [];
 
   const { data: episodes } = useQuery({
-    queryKey: ['anime-eps', mal_id],
-    queryFn: () => AniwatchAPI.getEpisodesByTitle(anime?.title),
-    enabled: !!mal_id && !!anime?.title,
-    staleTime: 1000 * 60 * 30,
+    queryKey: ['anime-eps', mal_id, epPage],
+    queryFn: () => JikanAPI.getEpisodes(mal_id, epPage),
+    enabled: !!mal_id && !!anime,
+    staleTime: 1000 * 60 * 10,
   });
-
-  // Auto-refresh episodes every 30 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.invalidateQueries(['episodes', mal_id]);
-    }, 30 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [mal_id]);
 
   if (isLoading) {
     return (
@@ -271,7 +260,7 @@ export default function AnimeDetail() {
         </div>
 
         {/* Episodes */}
-        {episodes?.length > 0 && (
+        {episodes?.data?.length > 0 && (
           <div className="mt-12">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-xl font-bold text-white">Episodes</h2>
@@ -300,8 +289,8 @@ export default function AnimeDetail() {
               </form>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {episodes.map((ep) => {
-                const thumb = anime.cover_image;
+              {episodes.data.map((ep) => {
+                const thumb = ep.images?.jpg?.image_url || anime.cover_image;
                 return (
                   <Link
                     key={ep.mal_id}
@@ -327,7 +316,13 @@ export default function AnimeDetail() {
                       <div className="absolute bottom-2 right-2 text-white font-black text-lg leading-none drop-shadow-lg">
                         {ep.mal_id}
                       </div>
-
+                      {/* Score - bottom left */}
+                      {ep.score > 0 && (
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+                          <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
+                          <span className="text-[10px] text-yellow-300 font-medium">{ep.score}</span>
+                        </div>
+                      )}
                     </div>
                     {/* Title below */}
                     <div className="px-2 py-2">
@@ -339,7 +334,12 @@ export default function AnimeDetail() {
                 );
               })}
             </div>
-
+            {episodes.pagination?.has_next_page && (
+              <Button variant="outline" onClick={() => setEpPage(p => p + 1)}
+                className="mt-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white rounded-xl w-full">
+                Load More Episodes
+              </Button>
+            )}
           </div>
         )}
 
