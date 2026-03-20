@@ -118,17 +118,17 @@ export default function Watch() {
               S2
             </button>
             <button
-              onClick={() => setServer('vidsrcto')}
+              onClick={() => setServer('2embedcc')}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === 'vidsrcto' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+                server === '2embedcc' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               S3
             </button>
             <button
-              onClick={() => setServer('animekai')}
+              onClick={() => setServer('smashy')}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === 'animekai' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+                server === 'smashy' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               S4
