@@ -100,7 +100,7 @@ export function initAdBlocker() {
     if (tag === 'script') {
       const originalSetAttribute = element.setAttribute;
       element.setAttribute = function(attr, value) {
-        if (attr === 'src' && value && !isBlockedUrl(value) === false) {
+        if (attr === 'src' && isBlockedUrl(value)) {
           console.warn('[AdBlocker] Blocked script:', value);
           return;
         }
