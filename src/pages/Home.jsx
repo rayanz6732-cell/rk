@@ -8,6 +8,7 @@ import AnimeSection from '../components/anime/AnimeSection';
 import TrendingSidebar from '../components/anime/TrendingSidebar';
 import { Loader2, Play } from 'lucide-react';
 import SignupSection from '../components/anime/SignupSection.jsx';
+import AdBanner from '../components/anime/AdBanner.jsx';
 
 export default function Home() {
   const [continueWatching, setContinueWatching] = useState([]);
