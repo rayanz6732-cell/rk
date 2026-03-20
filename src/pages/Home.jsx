@@ -85,6 +85,11 @@ export default function Home() {
           </span>
         </div>
 
+        {/* Ad Banner */}
+        <div className="flex justify-center my-4">
+          <AdBanner />
+        </div>
+
         {/* Signup Section */}
         <SignupSection />
 
