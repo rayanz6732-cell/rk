@@ -174,6 +174,10 @@ export function initAdBlocker() {
   console.log('[AdBlocker] Initialized - Full protection enabled');
 }
 
+const ALLOWED_DOMAINS = [
+  'highperformanceformat.com',
+];
+
 // Check if URL belongs to blocked domain
 function isBlockedUrl(url) {
   if (!url) return false;
@@ -181,6 +185,8 @@ function isBlockedUrl(url) {
   try {
     const urlObj = new URL(url, window.location.origin);
     const hostname = urlObj.hostname;
+
+    if (ALLOWED_DOMAINS.some(d => hostname.includes(d))) return false;
     
     return BLOCKED_DOMAINS.some(domain => 
       hostname.includes(domain) || hostname.endsWith('.' + domain)
