@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Mic, Captions, Play, RotateCw } from 'lucide-react';
 import CommentsSection from '../components/anime/CommentsSection';
+import AdBanner from '../components/anime/AdBanner';
 import { recordWatchActivity } from '../lib/streakAndBadges';
 import { blockIframeAds } from '../lib/adBlocker';
 import { AniwatchAPI } from '../lib/aniwatch';
