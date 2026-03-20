@@ -19,6 +19,7 @@ export default function AnimeDetail() {
   const [searchParams] = useSearchParams();
   const mal_id = searchParams.get('id');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [epPage, setEpPage] = useState(1);
   const [epJump, setEpJump] = useState('');
@@ -83,11 +84,19 @@ export default function AnimeDetail() {
   const seasonEntries = relations || [];
 
   const { data: episodes } = useQuery({
-    queryKey: ['anime-eps', mal_id, epPage],
-    queryFn: () => JikanAPI.getEpisodes(mal_id, epPage),
-    enabled: !!mal_id && !!anime,
-    staleTime: 1000 * 60 * 10,
+    queryKey: ['anime-eps', mal_id],
+    queryFn: () => AniwatchAPI.getEpisodesByTitle(anime?.title),
+    enabled: !!mal_id && !!anime?.title,
+    staleTime: 1000 * 60 * 30,
   });
+
+  // Auto-refresh episodes every 30 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries(['episodes', mal_id]);
+    }, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [mal_id]);
 
   if (isLoading) {
     return (
