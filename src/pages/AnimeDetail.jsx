@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
+import { AniwatchAPI } from '../lib/aniwatch';
 import AnimeCard from '../components/anime/AnimeCard';
 import {
   ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv,
@@ -17,9 +18,12 @@ export default function AnimeDetail() {
   const [searchParams] = useSearchParams();
   const mal_id = searchParams.get('id');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [epPage, setEpPage] = useState(1);
   const [epJump, setEpJump] = useState('');
+  const [aniwatchEpisodes, setAniwatchEpisodes] = useState([]);
+  const [epLoading, setEpLoading] = useState(false);
 
   // Reset state when anime changes
   useEffect(() => {
@@ -52,18 +56,15 @@ export default function AnimeDetail() {
   const { data: relations } = useQuery({
     queryKey: ['anime-relations', mal_id],
     queryFn: async () => {
-      // Recursively fetch all sequels in the chain
       const visited = new Set([String(mal_id)]);
       const allSequels = [];
       const queue = [mal_id];
-
       while (queue.length > 0) {
         const currentId = queue.shift();
         const data = await JikanAPI.getRelations(currentId);
         const sequels = (data || [])
           .filter(r => r.relation === 'Sequel')
           .flatMap(r => r.entry.filter(e => e.type === 'anime'));
-        
         for (const s of sequels) {
           if (!visited.has(String(s.mal_id))) {
             visited.add(String(s.mal_id));
@@ -80,12 +81,40 @@ export default function AnimeDetail() {
 
   const seasonEntries = relations || [];
 
-  const { data: episodes } = useQuery({
-    queryKey: ['anime-eps', mal_id, epPage],
-    queryFn: () => JikanAPI.getEpisodes(mal_id, epPage),
-    enabled: !!mal_id && !!anime,
-    staleTime: 1000 * 60 * 10,
-  });
+  // Fetch episodes from Aniwatch (fast updates, 1-4hr after airing)
+  const fetchAniwatchEpisodes = async (animeTitle) => {
+    if (!animeTitle) return;
+    setEpLoading(true);
+    try {
+      const eps = await AniwatchAPI.getEpisodesByTitle(animeTitle);
+      setAniwatchEpisodes(eps);
+    } catch (err) {
+      console.error('Aniwatch episodes failed:', err);
+    } finally {
+      setEpLoading(false);
+    }
+  };
+
+  // Fetch episodes when anime title is available
+  useEffect(() => {
+    if (anime?.title) {
+      fetchAniwatchEpisodes(anime.title);
+    }
+  }, [anime?.title]);
+
+  // Auto-refresh episodes every 30 minutes
+  useEffect(() => {
+    if (!anime?.title) return;
+    const interval = setInterval(() => {
+      fetchAniwatchEpisodes(anime.title);
+    }, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [anime?.title]);
+
+  // Paginate aniwatch episodes locally
+  const EPS_PER_PAGE = 100;
+  const pagedEpisodes = aniwatchEpisodes.slice((epPage - 1) * EPS_PER_PAGE, epPage * EPS_PER_PAGE);
+  const hasNextPage = epPage * EPS_PER_PAGE < aniwatchEpisodes.length;
 
   if (isLoading) {
     return (
@@ -111,7 +140,6 @@ export default function AnimeDetail() {
 
   const desc = anime.description || '';
   const shortDesc = desc.length > 400 ? desc.slice(0, 400) + '...' : desc;
-
   const statusColor = anime.status === 'ongoing' ? 'bg-blue-500/20 text-blue-400' : anime.status === 'upcoming' ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400';
 
   return (
@@ -143,7 +171,6 @@ export default function AnimeDetail() {
               }
             </div>
 
-            {/* Score card */}
             {anime.score > 0 && (
               <div className="mt-3 bg-zinc-900/80 rounded-xl p-3 border border-zinc-800/50 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -157,7 +184,6 @@ export default function AnimeDetail() {
 
           {/* Details */}
           <div className="flex-1 min-w-0">
-            {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
               {anime.rating && <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">{anime.rating}</span>}
               {anime.type && <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-zinc-800 text-zinc-400">{anime.type}</span>}
@@ -172,7 +198,6 @@ export default function AnimeDetail() {
               <p className="text-zinc-600 text-sm mb-4">{anime.title_japanese}</p>
             )}
 
-            {/* Genres */}
             {anime.genres?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-5">
                 {anime.genres.map(g => (
@@ -184,7 +209,6 @@ export default function AnimeDetail() {
               </div>
             )}
 
-            {/* Stats grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {anime.release_year && (
                 <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
@@ -195,7 +219,7 @@ export default function AnimeDetail() {
               {anime.episodes > 0 && (
                 <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
                   <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Tv className="w-3 h-3" /> Episodes</div>
-                  <p className="text-white font-bold">{anime.episodes}</p>
+                  <p className="text-white font-bold">{aniwatchEpisodes.length > 0 ? aniwatchEpisodes.length : anime.episodes}</p>
                 </div>
               )}
               {anime.duration && (
@@ -230,7 +254,6 @@ export default function AnimeDetail() {
               )}
             </div>
 
-            {/* Description */}
             {desc && (
               <div className="mb-8">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-2">Synopsis</h3>
@@ -246,7 +269,6 @@ export default function AnimeDetail() {
               </div>
             )}
 
-            {/* CTA */}
             <div className="flex flex-wrap gap-3 mb-4">
               <Link to={`/Watch?id=${mal_id}&ep=1&title=${encodeURIComponent(anime.title)}`}>
                 <Button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-8 py-5 rounded-xl gap-2 shadow-lg shadow-emerald-500/20">
@@ -259,89 +281,105 @@ export default function AnimeDetail() {
           </div>
         </div>
 
-        {/* Episodes */}
-        {episodes?.data?.length > 0 && (
-          <div className="mt-12">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        {/* Episodes — now from Aniwatch */}
+        <div className="mt-12">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-white">Episodes</h2>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const num = parseInt(epJump, 10);
-                  if (num > 0) window.location.href = `/Watch?id=${mal_id}&ep=${num}&title=${encodeURIComponent(anime.title)}`;
-                }}
-                className="flex items-center gap-2"
-              >
-                <input
-                  type="number"
-                  min="1"
-                  value={epJump}
-                  onChange={e => setEpJump(e.target.value)}
-                  placeholder="Jump to ep..."
-                  className="w-32 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold rounded-xl transition-colors"
-                >
-                  Go
-                </button>
-              </form>
+              {aniwatchEpisodes.length > 0 && (
+                <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-400">
+                  {aniwatchEpisodes.length} episodes
+                </span>
+              )}
+              {epLoading && (
+                <span className="text-xs text-zinc-600 animate-pulse">Fetching latest...</span>
+              )}
             </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const num = parseInt(epJump, 10);
+                if (num > 0) window.location.href = `/Watch?id=${mal_id}&ep=${num}&title=${encodeURIComponent(anime.title)}`;
+              }}
+              className="flex items-center gap-2"
+            >
+              <input
+                type="number"
+                min="1"
+                value={epJump}
+                onChange={e => setEpJump(e.target.value)}
+                placeholder="Jump to ep..."
+                className="w-32 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-colors"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold rounded-xl transition-colors"
+              >
+                Go
+              </button>
+            </form>
+          </div>
+
+          {epLoading && aniwatchEpisodes.length === 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {episodes.data.map((ep) => {
-                const thumb = ep.images?.jpg?.image_url || anime.cover_image;
-                return (
+              {[...Array(10)].map((_, i) => (
+                <Skeleton key={i} className="aspect-video rounded-xl bg-zinc-800" />
+              ))}
+            </div>
+          ) : pagedEpisodes.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {pagedEpisodes.map((ep) => (
                   <Link
-                    key={ep.mal_id}
-                    to={`/Watch?id=${mal_id}&ep=${ep.mal_id}&title=${encodeURIComponent(anime.title)}`}
+                    key={ep.number}
+                    to={`/Watch?id=${mal_id}&ep=${ep.number}&title=${encodeURIComponent(anime.title)}`}
                     className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
                   >
-                    {/* Thumbnail */}
                     <div className="relative aspect-video">
                       <img
-                        src={thumb}
-                        alt={`Episode ${ep.mal_id}`}
+                        src={anime.cover_image}
+                        alt={`Episode ${ep.number}`}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                      {/* Dark overlay */}
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-                      {/* Play button on hover */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="w-10 h-10 rounded-full bg-emerald-500/90 flex items-center justify-center shadow-lg">
                           <Play className="w-4 h-4 text-white fill-white ml-0.5" />
                         </div>
                       </div>
-                      {/* Episode number - bottom right */}
                       <div className="absolute bottom-2 right-2 text-white font-black text-lg leading-none drop-shadow-lg">
-                        {ep.mal_id}
+                        {ep.number}
                       </div>
-                      {/* Score - bottom left */}
-                      {ep.score > 0 && (
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
-                          <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                          <span className="text-[10px] text-yellow-300 font-medium">{ep.score}</span>
+                      {ep.isFiller && (
+                        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/80 text-black">
+                          FILLER
                         </div>
                       )}
                     </div>
-                    {/* Title below */}
                     <div className="px-2 py-2">
                       <p className="text-xs text-zinc-400 line-clamp-1 group-hover:text-emerald-400 transition-colors">
-                        {ep.title || `Episode ${ep.mal_id}`}
+                        {ep.title || `Episode ${ep.number}`}
                       </p>
                     </div>
                   </Link>
-                );
-              })}
-            </div>
-            {episodes.pagination?.has_next_page && (
-              <Button variant="outline" onClick={() => setEpPage(p => p + 1)}
-                className="mt-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white rounded-xl w-full">
-                Load More Episodes
-              </Button>
-            )}
-          </div>
-        )}
+                ))}
+              </div>
+              {hasNextPage && (
+                <Button
+                  variant="outline"
+                  onClick={() => setEpPage(p => p + 1)}
+                  className="mt-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white rounded-xl w-full"
+                >
+                  Load More Episodes
+                </Button>
+              )}
+            </>
+          ) : (
+            !epLoading && (
+              <p className="text-zinc-600 text-sm">No episodes found.</p>
+            )
+          )}
+        </div>
 
         {/* Characters */}
         {characters?.length > 0 && (
@@ -364,7 +402,7 @@ export default function AnimeDetail() {
           </div>
         )}
 
-        {/* Other Seasons / Related */}
+        {/* Other Seasons */}
         {seasonEntries.length > 0 && (
           <div className="mt-12">
             <h2 className="text-xl font-bold text-white mb-4">More Seasons</h2>
