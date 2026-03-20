@@ -271,7 +271,7 @@ export default function AnimeDetail() {
         </div>
 
         {/* Episodes */}
-        {episodes?.data?.length > 0 && (
+        {episodes?.length > 0 && (
           <div className="mt-12">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-xl font-bold text-white">Episodes</h2>
@@ -300,8 +300,8 @@ export default function AnimeDetail() {
               </form>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {episodes.data.map((ep) => {
-                const thumb = ep.images?.jpg?.image_url || anime.cover_image;
+              {episodes.map((ep) => {
+                const thumb = anime.cover_image;
                 return (
                   <Link
                     key={ep.mal_id}
