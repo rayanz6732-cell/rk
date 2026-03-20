@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Mic, Captions, Play, RotateCw } from 'lucide-react';
-import { JikanAPI } from '../lib/jikan';
 import CommentsSection from '../components/anime/CommentsSection';
 import { recordWatchActivity } from '../lib/streakAndBadges';
 import { blockIframeAds } from '../lib/adBlocker';
-
+import { AniwatchAPI } from '../lib/aniwatch';
 
 export default function Watch() {
   const [searchParams] = useSearchParams();
@@ -20,15 +19,14 @@ export default function Watch() {
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
   const iframeRef = useRef(null);
-
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchEpisodes = async () => {
-    if (!mal_id) return;
+    if (!title) return;
     setRefreshing(true);
     try {
-      const data = await JikanAPI.getEpisodes(mal_id);
-      setEpisodes(data?.data || []);
+      const eps = await AniwatchAPI.getEpisodesByTitle(title);
+      setEpisodes(eps);
     } catch (err) {
       console.error('Failed to fetch episodes:', err);
     } finally {
@@ -41,8 +39,13 @@ export default function Watch() {
     recordWatchActivity().catch(() => {});
   }, [mal_id, ep]);
 
+  // Auto-refresh every 30 minutes to catch new episodes
   useEffect(() => {
-    // Block ads on the video player iframe
+    const interval = setInterval(fetchEpisodes, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [title]);
+
+  useEffect(() => {
     if (iframeRef.current) {
       blockIframeAds(iframeRef.current);
     }
@@ -131,24 +134,24 @@ export default function Watch() {
               S4
             </button>
           </div>
-        <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
-          <button
-            onClick={() => setAudioType('sub')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              audioType === 'sub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            <Captions className="w-3.5 h-3.5" /> SUB
-          </button>
-          <button
-            onClick={() => setAudioType('dub')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              audioType === 'dub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            <Mic className="w-3.5 h-3.5" /> DUB
-          </button>
-        </div>
+          <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
+            <button
+              onClick={() => setAudioType('sub')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                audioType === 'sub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Captions className="w-3.5 h-3.5" /> SUB
+            </button>
+            <button
+              onClick={() => setAudioType('dub')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                audioType === 'dub' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Mic className="w-3.5 h-3.5" /> DUB
+            </button>
+          </div>
         </div>
       </div>
 
@@ -158,16 +161,16 @@ export default function Watch() {
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
             <iframe
-                ref={iframeRef}
-                key={`${mal_id}-${ep}-${audioType}-${server}`}
-                src={embedUrl}
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-                sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-                frameBorder="0"
-                title={`${title} Episode ${ep}`}
-              />
+              ref={iframeRef}
+              key={`${mal_id}-${ep}-${audioType}-${server}`}
+              src={embedUrl}
+              className="absolute inset-0 w-full h-full"
+              allowFullScreen
+              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+              frameBorder="0"
+              title={`${title} Episode ${ep}`}
+            />
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
@@ -183,8 +186,7 @@ export default function Watch() {
             {/* Next Episodes — mobile/below player */}
             {episodes.length > 0 && (() => {
               const currentEpNum = parseInt(ep);
-              const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 10);
-              const coverThumb = `https://img.anili.st/media/${mal_id}`;
+              const nextEps = episodes.filter(e => e.number > currentEpNum).slice(0, 10);
               if (!nextEps.length) return null;
               return (
                 <div className="mt-5">
@@ -200,26 +202,23 @@ export default function Watch() {
                     </button>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {nextEps.map(e => {
-                      const thumb = e.images?.jpg?.image_url;
-                      return (
-                        <Link
-                          key={e.mal_id}
-                          to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
-                          className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
-                        >
-                            <div className="px-3 py-3 flex items-center gap-3">
-                            <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.mal_id}</span>
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-medium text-zinc-500 mb-0.5">Episode {e.mal_id}</p>
-                              <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">
-                                {e.title || `Episode ${e.mal_id}`}
-                              </p>
-                            </div>
+                    {nextEps.map(e => (
+                      <Link
+                        key={e.number}
+                        to={`/Watch?id=${mal_id}&ep=${e.number}&title=${encodeURIComponent(title)}`}
+                        className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
+                      >
+                        <div className="px-3 py-3 flex items-center gap-3">
+                          <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.number}</span>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-medium text-zinc-500 mb-0.5">Episode {e.number}</p>
+                            <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                              {e.title || `Episode ${e.number}`}
+                            </p>
                           </div>
-                        </Link>
-                      );
-                    })}
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                 </div>
               );
@@ -232,7 +231,7 @@ export default function Watch() {
         {/* Up Next Sidebar — desktop only */}
         {episodes.length > 0 && (() => {
           const currentEpNum = parseInt(ep);
-          const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 15);
+          const nextEps = episodes.filter(e => e.number > currentEpNum).slice(0, 15);
           if (!nextEps.length) return null;
           return (
             <div className="hidden lg:flex flex-col w-80 xl:w-96 flex-shrink-0 border-l border-zinc-900" style={{ height: 'calc(100vh - 53px)', overflowY: 'auto' }}>
@@ -240,22 +239,19 @@ export default function Watch() {
                 <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Up Next</h3>
               </div>
               <div className="flex flex-col gap-2 p-3">
-                {nextEps.map(e => {
-                  const thumb = e.images?.jpg?.image_url;
-                  return (
-                    <Link
-                      key={e.mal_id}
-                      to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
-                      className="group flex items-center gap-3 rounded-xl bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all px-3 py-3"
-                    >
-                      <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.mal_id}</span>
-                      <div className="flex flex-col justify-center min-w-0">
-                        <p className="text-[11px] text-zinc-500">Episode {e.mal_id}</p>
-                        <p className="text-xs text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors">{e.title || `Episode ${e.mal_id}`}</p>
-                      </div>
-                    </Link>
-                  );
-                })}
+                {nextEps.map(e => (
+                  <Link
+                    key={e.number}
+                    to={`/Watch?id=${mal_id}&ep=${e.number}&title=${encodeURIComponent(title)}`}
+                    className="group flex items-center gap-3 rounded-xl bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all px-3 py-3"
+                  >
+                    <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.number}</span>
+                    <div className="flex flex-col justify-center min-w-0">
+                      <p className="text-[11px] text-zinc-500">Episode {e.number}</p>
+                      <p className="text-xs text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors">{e.title || `Episode ${e.number}`}</p>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
           );
