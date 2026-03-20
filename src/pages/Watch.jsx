@@ -25,11 +25,11 @@ export default function Watch() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchEpisodes = async () => {
-    if (!mal_id) return;
+    if (!title) return;
     setRefreshing(true);
     try {
-      const data = await JikanAPI.getEpisodes(mal_id);
-      setEpisodes(data?.data || []);
+      const episodes = await AniwatchAPI.getEpisodesByTitle(title);
+      setEpisodes(episodes);
     } catch (err) {
       console.error('Failed to fetch episodes:', err);
     } finally {

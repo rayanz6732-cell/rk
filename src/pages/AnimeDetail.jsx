@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
+import { AniwatchAPI } from '../lib/aniwatch';
+import { useQueryClient } from '@tanstack/react-query';
 import AnimeCard from '../components/anime/AnimeCard';
 import {
   ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv,
