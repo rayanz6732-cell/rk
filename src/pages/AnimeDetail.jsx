@@ -327,13 +327,7 @@ export default function AnimeDetail() {
                       <div className="absolute bottom-2 right-2 text-white font-black text-lg leading-none drop-shadow-lg">
                         {ep.mal_id}
                       </div>
-                      {/* Score - bottom left */}
-                      {ep.score > 0 && (
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
-                          <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                          <span className="text-[10px] text-yellow-300 font-medium">{ep.score}</span>
-                        </div>
-                      )}
+
                     </div>
                     {/* Title below */}
                     <div className="px-2 py-2">
@@ -345,12 +339,7 @@ export default function AnimeDetail() {
                 );
               })}
             </div>
-            {episodes.pagination?.has_next_page && (
-              <Button variant="outline" onClick={() => setEpPage(p => p + 1)}
-                className="mt-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white rounded-xl w-full">
-                Load More Episodes
-              </Button>
-            )}
+
           </div>
         )}
 
