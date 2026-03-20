@@ -79,9 +79,9 @@ export default function Watch() {
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : server === '2embed'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : server === 'vidsrcto'
-    ? `https://vidsrc.to/embed/anime/${mal_id}/${ep}`
-    : `https://rk-scraper-production.up.railway.app/embed?title=${encodeURIComponent(title)}&ep=${ep}`;
+    : server === '2embedcc'
+    ? `https://www.2embed.cc/embedanime/${mal_id}/${ep}`
+    : `https://player.smashy.stream/anime/${mal_id}?ep=${ep}`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
