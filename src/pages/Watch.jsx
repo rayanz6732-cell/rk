@@ -226,6 +226,7 @@ export default function Watch() {
               );
             })()}
 
+            <AdBanner />
             <CommentsSection mal_id={mal_id} episode={ep} />
           </div>
         </div>
