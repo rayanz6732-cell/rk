@@ -8,7 +8,6 @@ import AnimeSection from '../components/anime/AnimeSection';
 import TrendingSidebar from '../components/anime/TrendingSidebar';
 import { Loader2, Play } from 'lucide-react';
 import SignupSection from '../components/anime/SignupSection.jsx';
-import AdBanner from '../components/anime/AdBanner.jsx';
 
 export default function Home() {
   const [continueWatching, setContinueWatching] = useState([]);
@@ -84,11 +83,6 @@ export default function Home() {
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Live data from MyAnimeList
           </span>
-        </div>
-
-        {/* Ad Banner */}
-        <div className="flex justify-center my-4">
-          <AdBanner />
         </div>
 
         {/* Signup Section */}
