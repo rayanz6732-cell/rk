@@ -34,25 +34,25 @@ export default function Home() {
   const { data: currentSeason, isLoading: loadingSeason } = useQuery({
     queryKey: ['current-season'],
     queryFn: () => JikanAPI.getCurrentSeason(),
-    staleTime: 1000 * 60 * 15, // 15 min cache
+    staleTime: 1000 * 60 * 60, // 1 hour cache
   });
 
   const { data: topAiring, isLoading: loadingTop } = useQuery({
     queryKey: ['top-airing'],
     queryFn: () => JikanAPI.getTopAiring(),
-    staleTime: 1000 * 60 * 15,
+    staleTime: 1000 * 60 * 60,
   });
 
-  const { data: mostPopular, isLoading: loadingPopular } = useQuery({
+  const { data: mostPopular } = useQuery({
     queryKey: ['most-popular'],
     queryFn: () => JikanAPI.getMostPopular(),
-    staleTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 60,
   });
 
   const { data: upcoming } = useQuery({
     queryKey: ['upcoming'],
     queryFn: () => JikanAPI.getTopUpcoming(),
-    staleTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 60,
   });
 
   const isLoading = loadingSeason && loadingTop;
