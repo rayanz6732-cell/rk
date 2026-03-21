@@ -1,31 +1,19 @@
 // Jikan API v4 - Unofficial MyAnimeList API (free, no auth needed)
 const BASE = 'https://api.jikan.moe/v4';
 
-// Rate limit: 3 requests/second, 60/minute — add small delay between calls
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
-
-let requestQueue = Promise.resolve();
-const MIN_DELAY = 600; // 600ms delay = safe rate limit
-
 async function jikanFetch(path, params = {}) {
-  // Queue requests to ensure they run serially with delay
-  return new Promise((resolve, reject) => {
-    requestQueue = requestQueue
-      .then(() => delay(MIN_DELAY))
-      .then(async () => {
-        try {
-          const url = new URL(`${BASE}${path}`);
-          Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-          const res = await fetch(url.toString());
-          if (!res.ok) throw new Error(`Jikan API error: ${res.status}`);
-          const data = await res.json();
-          resolve(data);
-        } catch (err) {
-          reject(err);
-        }
-      })
-      .catch(reject);
-  });
+  const url = new URL(`${BASE}${path}`);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  if (res.status === 429) {
+    // Rate limited — wait 1s and retry once
+    await new Promise(r => setTimeout(r, 1000));
+    const retry = await fetch(url.toString());
+    if (!retry.ok) throw new Error(`Jikan API error: ${retry.status}`);
+    return retry.json();
+  }
+  if (!res.ok) throw new Error(`Jikan API error: ${res.status}`);
+  return res.json();
 }
 
 // Convert 24-hour time strings to 12-hour format within a broadcast string
