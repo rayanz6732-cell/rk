@@ -211,16 +211,36 @@ export default function Watch() {
         {/* Video + info */}
         <div className="flex-1 min-w-0">
           <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-            <iframe
-              ref={iframeRef}
-              key={`${mal_id}-${ep}-${audioType}-${server}`}
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              frameBorder="0"
-              title={`${title} Episode ${ep}`}
-            />
+            {server === 'gogo' && gogoLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+                  <p className="text-zinc-500 text-sm">Loading from S3...</p>
+                </div>
+              </div>
+            ) : server === 'gogo' && gogoError ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-center px-6">
+                  <p className="text-zinc-400 text-sm">{gogoError}</p>
+                  <p className="text-zinc-600 text-xs">Try S1 or S2 instead</p>
+                </div>
+              </div>
+            ) : embedUrl ? (
+              <iframe
+                ref={iframeRef}
+                key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full"
+                allowFullScreen
+                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                frameBorder="0"
+                title={`${title} Episode ${ep}`}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="text-zinc-600 text-sm">No source available</p>
+              </div>
+            )}
           </div>
           <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
             <p className="text-white font-semibold">{title}</p>
