@@ -18,7 +18,6 @@ export default function AnimeDetail() {
   const [searchParams] = useSearchParams();
   const mal_id = searchParams.get('id');
   const [showFullDesc, setShowFullDesc] = useState(false);
-  const [epPage, setEpPage] = useState(1);
   const [epJump, setEpJump] = useState('');
 
   useEffect(() => {
