@@ -111,7 +111,9 @@ export default function Watch() {
 
   const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
-    : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
+    : server === '2embed'
+    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
+    : `https://2anime.xyz/embed/${mal_id}/${ep}`;
 
   const currentEpNum = parseInt(ep);
   const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 15);
