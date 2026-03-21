@@ -133,20 +133,7 @@ export function initAdBlocker() {
     return originalWindowOpen.apply(window, [url, ...rest]);
   };
 
-  // Prevent ads from dynamically injecting content
-  const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-  Object.defineProperty(Element.prototype, 'innerHTML', {
-    set(value) {
-      if (containsAdCode(value)) {
-        console.warn('[AdBlocker] Blocked ad injection');
-        return;
-      }
-      return originalInnerHTML.set.call(this, value);
-    },
-    get() {
-      return originalInnerHTML.get.call(this);
-    },
-  });
+  // innerHTML override removed - was causing false positives with ad banners
 
   // DOM mutation observer - only watches direct children of <body>, never touches React's subtree
   const observer = new MutationObserver((mutations) => {
