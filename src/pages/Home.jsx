@@ -15,14 +15,24 @@ export default function Home() {
   useEffect(() => {
     const allKeys = Object.keys(localStorage).filter(key => key.startsWith('rk_progress_'));
     const watching = allKeys.map(key => {
-      const [, mal_id, epStr] = key.match(/rk_progress_(\d+)_ep(\d+)/) || [];
-      return { mal_id: parseInt(mal_id), episode: parseInt(epStr) };
-    }).filter(item => item.mal_id);
+      const match = key.match(/rk_progress_(\d+)_ep(\d+)/);
+      if (!match) return null;
+      return { mal_id: parseInt(match[1]), episode: parseInt(match[2]) };
+    }).filter(Boolean);
 
-    const uniqueIds = [...new Set(watching.map(w => w.mal_id))].slice(0, 6);
+    // Get highest episode per anime
+    const byAnime = {};
+    watching.forEach(({ mal_id, episode }) => {
+      if (!byAnime[mal_id] || episode > byAnime[mal_id]) byAnime[mal_id] = episode;
+    });
+
+    const uniqueIds = Object.keys(byAnime).slice(0, 6);
     if (uniqueIds.length > 0) {
       Promise.all(uniqueIds.map(id => JikanAPI.getById(id).catch(() => null)))
-        .then(results => setContinueWatching(results.filter(Boolean)))
+        .then(results => {
+          const enriched = results.filter(Boolean).map(a => ({ ...a, lastEpisode: byAnime[a.mal_id] }));
+          setContinueWatching(enriched);
+        })
         .catch(() => {});
     }
   }, []);
