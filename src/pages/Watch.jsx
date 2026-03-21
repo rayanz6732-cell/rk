@@ -5,6 +5,7 @@ import CommentsSection from '../components/anime/CommentsSection';
 import { recordWatchActivity } from '../lib/streakAndBadges';
 import { blockIframeAds } from '../lib/adBlocker';
 import { JikanAPI } from '../lib/jikan';
+import { base44 } from '@/api/base44Client';
 
 export default function Watch() {
   const [searchParams] = useSearchParams();
@@ -21,21 +22,47 @@ export default function Watch() {
   const [refreshing, setRefreshing] = useState(false);
   const iframeRef = useRef(null);
 
+  // Fetch Jikan episodes (metadata) + Aniwatch episode count (faster updates)
+  // Merge: use Jikan for titles/filler, Aniwatch to surface episodes Jikan hasn't listed yet
   const fetchEpisodes = async () => {
     if (!mal_id) return;
     setRefreshing(true);
     try {
-      // Fetch all episode pages
-      const first = await JikanAPI.getEpisodes(mal_id, 1);
-      let all = first.data || [];
-      const totalPages = first.pagination?.last_visible_page || 1;
+      // Fetch Jikan metadata and Aniwatch count in parallel
+      const [firstPage, aniwatchRes] = await Promise.all([
+        JikanAPI.getEpisodes(mal_id, 1),
+        base44.functions.invoke('aniwatchProxy', { title }).catch(() => null),
+      ]);
+
+      let jikanEps = firstPage.data || [];
+      const totalPages = firstPage.pagination?.last_visible_page || 1;
       if (totalPages > 1) {
         const rest = await Promise.all(
           Array.from({ length: totalPages - 1 }, (_, i) => JikanAPI.getEpisodes(mal_id, i + 2))
         );
-        rest.forEach(r => { all = all.concat(r.data || []); });
+        rest.forEach(r => { jikanEps = jikanEps.concat(r.data || []); });
       }
-      setEpisodes(all);
+
+      // Aniwatch episodes (faster source — may have newer eps)
+      const aniwatchEps = aniwatchRes?.data?.episodes || [];
+      const aniwatchCount = aniwatchEps.length;
+
+      // Build merged list: Jikan episodes enriched with aniwatch, plus any extras aniwatch has
+      const jikanNums = new Set(jikanEps.map(e => e.mal_id));
+      const extras = [];
+      for (let i = jikanEps.length + 1; i <= aniwatchCount; i++) {
+        if (!jikanNums.has(i)) {
+          const aw = aniwatchEps.find(e => e.number === i);
+          extras.push({
+            mal_id: i,
+            title: aw?.title || `Episode ${i}`,
+            isFiller: aw?.isFiller || false,
+            fromAniwatch: true,
+          });
+        }
+      }
+
+      setEpisodes([...jikanEps, ...extras]);
     } catch (err) {
       console.error('Failed to fetch episodes:', err);
     } finally {
@@ -46,6 +73,10 @@ export default function Watch() {
   useEffect(() => {
     fetchEpisodes();
     recordWatchActivity().catch(() => {});
+
+    // Auto-refresh every 30 minutes to pick up new episodes from Aniwatch
+    const interval = setInterval(fetchEpisodes, 30 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [mal_id]);
 
   useEffect(() => {
