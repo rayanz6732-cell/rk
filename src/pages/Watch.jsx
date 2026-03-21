@@ -20,6 +20,9 @@ export default function Watch() {
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [gogoSrc, setGogoSrc] = useState(null);
+  const [gogoLoading, setGogoLoading] = useState(false);
+  const [gogoError, setGogoError] = useState(null);
   const iframeRef = useRef(null);
 
   // Fetch Jikan episodes (metadata) + Aniwatch episode count (faster updates)
