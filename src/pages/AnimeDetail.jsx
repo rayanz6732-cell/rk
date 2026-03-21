@@ -75,15 +75,43 @@ export default function AnimeDetail() {
   });
 
   const { data: episodesData } = useQuery({
-    queryKey: ['anime-episodes', mal_id, epPage],
-    queryFn: () => JikanAPI.getEpisodes(mal_id, epPage),
-    enabled: !!mal_id,
-    staleTime: 1000 * 60 * 60,
+    queryKey: ['anime-episodes-merged', mal_id],
+    queryFn: async () => {
+      // Fetch Jikan (all pages) + Aniwatch in parallel
+      const [firstPage, aniwatchRes] = await Promise.all([
+        JikanAPI.getEpisodes(mal_id, 1),
+        base44.functions.invoke('aniwatchProxy', { title: anime?.title || '' }).catch(() => null),
+      ]);
+
+      let jikanEps = firstPage.data || [];
+      const totalPages = firstPage.pagination?.last_visible_page || 1;
+      if (totalPages > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) => JikanAPI.getEpisodes(mal_id, i + 2))
+        );
+        rest.forEach(r => { jikanEps = jikanEps.concat(r.data || []); });
+      }
+
+      // Merge Aniwatch extras (episodes Jikan hasn't listed yet)
+      const aniwatchEps = aniwatchRes?.data?.episodes || [];
+      const aniwatchCount = aniwatchEps.length;
+      const jikanNums = new Set(jikanEps.map(e => e.mal_id));
+      const extras = [];
+      for (let i = jikanEps.length + 1; i <= aniwatchCount; i++) {
+        if (!jikanNums.has(i)) {
+          const aw = aniwatchEps.find(e => e.number === i);
+          extras.push({ mal_id: i, title: aw?.title || `Episode ${i}`, filler: aw?.isFiller || false, fromAniwatch: true });
+        }
+      }
+      return [...jikanEps, ...extras];
+    },
+    enabled: !!mal_id && !!anime,
+    staleTime: 1000 * 30 * 60, // 30 min
   });
 
   const seasonEntries = relations || [];
-  const episodes = episodesData?.data || [];
-  const hasNextEpPage = episodesData?.pagination?.has_next_page || false;
+  const episodes = episodesData || [];
+  const hasNextEpPage = false; // all pages fetched at once now
 
   if (isLoading) {
     return (
