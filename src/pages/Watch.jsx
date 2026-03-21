@@ -222,8 +222,11 @@ export default function Watch() {
                     >
                       <div className="px-3 py-3 flex items-center gap-3">
                         <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.mal_id}</span>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-medium text-zinc-500 mb-0.5">Episode {e.mal_id}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className="text-[11px] font-medium text-zinc-500">Episode {e.mal_id}</p>
+                            {e.fromAniwatch && <span className="px-1 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400">NEW</span>}
+                          </div>
                           <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">
                             {e.title || `Episode ${e.mal_id}`}
                           </p>
