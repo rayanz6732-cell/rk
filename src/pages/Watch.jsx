@@ -116,22 +116,7 @@ export default function Watch() {
             >
               S2
             </button>
-            <button
-              onClick={() => setServer('2embedcc')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === '2embedcc' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              S3
-            </button>
-            <button
-              onClick={() => setServer('smashy')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === 'smashy' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              S4
-            </button>
+
           </div>
           <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
             <button
