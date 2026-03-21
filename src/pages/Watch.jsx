@@ -193,7 +193,6 @@ export default function Watch() {
               className="absolute inset-0 w-full h-full"
               allowFullScreen
               allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
               frameBorder="0"
               title={`${title} Episode ${ep}`}
             />
