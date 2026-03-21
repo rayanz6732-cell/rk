@@ -13,21 +13,18 @@ export default function Home() {
   const [continueWatching, setContinueWatching] = useState([]);
 
   useEffect(() => {
-    // Get all watch history from localStorage
     const allKeys = Object.keys(localStorage).filter(key => key.startsWith('rk_progress_'));
     const watching = allKeys.map(key => {
       const [, mal_id, epStr] = key.match(/rk_progress_(\d+)_ep(\d+)/) || [];
       return { mal_id: parseInt(mal_id), episode: parseInt(epStr) };
     }).filter(item => item.mal_id);
 
-    // Get unique anime IDs and fetch their details
     const uniqueIds = [...new Set(watching.map(w => w.mal_id))].slice(0, 6);
     if (uniqueIds.length > 0) {
-      Promise.all(
-        uniqueIds.map(id => JikanAPI.getById(id))
-      ).then(results => {
-        setContinueWatching(results.filter(Boolean));
-      });
+      // Use DB instead of Jikan to avoid extra API calls
+      base44.entities.Anime.filter({ mal_id: { $in: uniqueIds.map(String) } })
+        .then(results => setContinueWatching(results.filter(Boolean)))
+        .catch(() => {});
     }
   }, []);
 
