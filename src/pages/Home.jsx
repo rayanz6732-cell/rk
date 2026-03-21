@@ -22,8 +22,9 @@ export default function Home() {
     const uniqueIds = [...new Set(watching.map(w => w.mal_id))].slice(0, 6);
     if (uniqueIds.length > 0) {
       // Use DB instead of Jikan to avoid extra API calls
-      base44.entities.Anime.filter({ mal_id: { $in: uniqueIds.map(String) } })
-        .then(results => setContinueWatching(results.filter(Boolean)))
+      Promise.all(uniqueIds.map(id =>
+        base44.entities.Anime.filter({ mal_id: String(id) }).then(r => r[0])
+      )).then(results => setContinueWatching(results.filter(Boolean)))
         .catch(() => {});
     }
   }, []);
