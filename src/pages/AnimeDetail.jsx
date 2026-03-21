@@ -336,6 +336,11 @@ export default function AnimeDetail() {
                           FILLER
                         </div>
                       )}
+                      {ep.fromAniwatch && (
+                        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/80 text-black">
+                          NEW
+                        </div>
+                      )}
                     </div>
                     <div className="px-2 py-2">
                       <p className="text-xs text-zinc-400 line-clamp-1 group-hover:text-emerald-400 transition-colors">
