@@ -105,7 +105,7 @@ export default function Home() {
                   {continueWatching.map((anime) => (
                     <Link
                       key={anime.mal_id}
-                      to={`/AnimeDetail?id=${anime.mal_id}`}
+                      to={`/Watch?id=${anime.mal_id}&ep=${anime.lastEpisode || 1}&title=${encodeURIComponent(anime.title)}`}
                       className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
                     >
                       <div className="relative aspect-[3/4]">
