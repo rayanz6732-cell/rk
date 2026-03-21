@@ -8,8 +8,6 @@ export default function AdBanner() {
     if (injected.current || !containerRef.current) return;
     injected.current = true;
 
-    const container = containerRef.current;
-
     window.atOptions = {
       key: '8f5a8516decec887fa94fa59f43c4b70',
       format: 'iframe',
@@ -19,9 +17,9 @@ export default function AdBanner() {
     };
 
     const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = '//www.highperformanceformat.com/8f5a8516decec887fa94fa59f43c4b70/invoke.js';
-    container.appendChild(script);
+    script.src = 'https://www.highperformanceformat.com/8f5a8516decec887fa94fa59f43c4b70/invoke.js';
+    script.async = true;
+    containerRef.current.appendChild(script);
   }, []);
 
   return (
