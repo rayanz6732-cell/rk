@@ -348,15 +348,7 @@ export default function AnimeDetail() {
                   </Link>
                 ))}
               </div>
-              {hasNextEpPage && (
-                <Button
-                  variant="outline"
-                  onClick={() => setEpPage(p => p + 1)}
-                  className="mt-4 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white rounded-xl w-full"
-                >
-                  Load More Episodes
-                </Button>
-              )}
+
             </>
           ) : (
             <p className="text-zinc-600 text-sm">No episodes found.</p>
