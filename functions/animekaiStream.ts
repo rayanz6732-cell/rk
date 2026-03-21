@@ -1,120 +1,120 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
-const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
-const GOGO_BASE = "https://gogoanimes.fi";
+const ANIWATCH_BASE = 'https://aniwatch-api-production-dbc1.up.railway.app';
+const UA = { 'User-Agent': 'Mozilla/5.0' };
 
-async function getAnimeTitleFromAniList(malId) {
-  const query = `
-    query ($malId: Int) {
-      Media(idMal: $malId, type: ANIME) {
-        title { english romaji }
+async function searchAniwatch(title) {
+  const r = await fetch(`${ANIWATCH_BASE}/api/v2/hianime/search?q=${encodeURIComponent(title)}&page=1`, { headers: UA });
+  const data = await r.json();
+  return data?.data?.animes || [];
+}
+
+async function getEpisodes(aniwatchId) {
+  const r = await fetch(`${ANIWATCH_BASE}/api/v2/hianime/anime/${aniwatchId}/episodes`, { headers: UA });
+  const data = await r.json();
+  return data?.data?.episodes || [];
+}
+
+async function getSources(episodeId, category = 'sub') {
+  // Try hd-2 first, fallback to hd-1
+  for (const server of ['hd-2', 'hd-1']) {
+    try {
+      const url = `${ANIWATCH_BASE}/api/v2/hianime/episode/sources?animeEpisodeId=${encodeURIComponent(episodeId)}&server=${server}&category=${category}`;
+      console.log(`[S3] Trying server=${server} category=${category} episodeId=${episodeId}`);
+      const r = await fetch(url, { headers: UA });
+      const data = await r.json();
+      if (data?.status === 200 && data?.data?.sources?.length) {
+        console.log(`[S3] Success with server=${server}`);
+        return { sources: data.data.sources, subtitles: data.data.subtitles || [] };
       }
+      console.log(`[S3] server=${server} failed: ${JSON.stringify(data)}`);
+    } catch (e) {
+      console.log(`[S3] server=${server} error: ${e.message}`);
     }
-  `;
-  try {
-    const r = await fetch("https://graphql.anilist.co", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ query, variables: { malId: parseInt(malId) } }),
-    });
-    const data = await r.json();
-    return data?.data?.Media?.title?.english || data?.data?.Media?.title?.romaji || null;
-  } catch {
-    return null;
   }
-}
-
-async function searchGogoanime(query) {
-  const r = await fetch(`${GOGO_BASE}/search.html?keyword=${encodeURIComponent(query)}`, {
-    headers: { "User-Agent": UA }
-  });
-  const html = await r.text();
-  const matches = [...html.matchAll(/href="\/category\/([^"]+)"/g)];
-  return [...new Set(matches.map(m => m[1]))];
-}
-
-function pickSlug(slugs, isDub) {
-  if (!slugs.length) return null;
-  if (isDub) {
-    return slugs.find(s => s.endsWith('-dub')) || slugs[0];
-  }
-  return slugs.find(s => !s.endsWith('-dub') && !s.endsWith('-tv')) || 
-         slugs.find(s => !s.endsWith('-dub')) || 
-         slugs[0];
-}
-
-async function getEpisodeSrc(slug, episode) {
-  const epSlug = `${slug}-episode-${episode}`;
-  const r = await fetch(`${GOGO_BASE}/${epSlug}`, {
-    headers: { "User-Agent": UA, "Referer": GOGO_BASE }
-  });
-  if (!r.ok) return null;
-  const html = await r.text();
-  const iframeMatch = html.match(/data-video="([^"]+)"/);
-  return iframeMatch ? iframeMatch[1] : null;
+  return null;
 }
 
 Deno.serve(async (req) => {
   const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
 
     const body = await req.json();
-    const { mal_id, episode, audio_type = "sub", anime_title } = body;
+    const { mal_id, episode, audio_type = 'sub', anime_title } = body;
 
-    if (!mal_id || !episode) {
-      return Response.json({ error: "mal_id and episode are required" }, { status: 400, headers: corsHeaders });
+    if (!anime_title || !episode) {
+      return Response.json({ error: 'anime_title and episode are required' }, { status: 400, headers: corsHeaders });
     }
 
-    const isDub = audio_type === "dub";
+    console.log(`[S3] Looking up: "${anime_title}" ep=${episode} audio=${audio_type}`);
 
-    let searchTitle = anime_title;
-    if (!searchTitle) {
-      searchTitle = await getAnimeTitleFromAniList(mal_id);
-    }
-    if (!searchTitle) {
-      return Response.json({ error: "Could not resolve anime title" }, { status: 404, headers: corsHeaders });
-    }
+    // Search for anime
+    let animes = await searchAniwatch(anime_title);
 
-    let slugs = await searchGogoanime(searchTitle);
-
-    if (!slugs.length) {
-      const shortTitle = searchTitle.split(' ').slice(0, 3).join(' ');
-      slugs = await searchGogoanime(shortTitle);
+    // If no results, try a shorter title
+    if (!animes.length) {
+      const shortTitle = anime_title.split(' ').slice(0, 4).join(' ');
+      console.log(`[S3] Retrying with short title: "${shortTitle}"`);
+      animes = await searchAniwatch(shortTitle);
     }
 
-    if (!slugs.length) {
-      return Response.json({ error: "Anime not found on streaming source", title: searchTitle }, { status: 404, headers: corsHeaders });
+    if (!animes.length) {
+      console.log(`[S3] Anime not found in Aniwatch: "${anime_title}"`);
+      return Response.json({ error: `Anime "${anime_title}" not found on S3 server` }, { status: 404, headers: corsHeaders });
     }
 
-    const slug = pickSlug(slugs, isDub);
-    if (!slug) {
-      return Response.json({ error: "No suitable server found" }, { status: 404, headers: corsHeaders });
+    const aniwatchId = animes[0].id;
+    console.log(`[S3] Found anime: id=${aniwatchId} name=${animes[0].name}`);
+
+    // Get episodes
+    const episodes = await getEpisodes(aniwatchId);
+    const epNum = parseInt(episode, 10);
+    const targetEp = episodes.find(e => e.number === epNum);
+
+    if (!targetEp) {
+      console.log(`[S3] Episode ${epNum} not found. Available: ${episodes.map(e => e.number).join(', ')}`);
+      return Response.json({ error: `Episode ${epNum} not available on S3 server yet` }, { status: 404, headers: corsHeaders });
     }
 
-    const src = await getEpisodeSrc(slug, episode);
-    if (!src) {
-      for (const fallbackSlug of slugs.slice(1, 4)) {
-        const fallbackSrc = await getEpisodeSrc(fallbackSlug, episode);
-        if (fallbackSrc) {
-          return Response.json({ src: fallbackSrc, slug: fallbackSlug, title: searchTitle }, { headers: corsHeaders });
-        }
-      }
-      return Response.json({ error: "Episode not found", slug, title: searchTitle }, { status: 404, headers: corsHeaders });
+    console.log(`[S3] Found episode: id=${targetEp.episodeId}`);
+
+    // Get streaming sources
+    const category = audio_type === 'dub' ? 'dub' : 'sub';
+    let result = await getSources(targetEp.episodeId, category);
+
+    // If dub not found, fallback to sub
+    if (!result && category === 'dub') {
+      console.log(`[S3] Dub not found, falling back to sub`);
+      result = await getSources(targetEp.episodeId, 'sub');
     }
 
-    return Response.json({ src, slug, title: searchTitle }, { headers: corsHeaders });
+    if (!result) {
+      return Response.json({ error: 'Found anime but could not extract stream link from S3' }, { status: 404, headers: corsHeaders });
+    }
+
+    // Pick best source (prefer m3u8)
+    const src = result.sources.find(s => s.isM3U8)?.url || result.sources[0]?.url;
+
+    return Response.json({
+      src,
+      type: 'm3u8',
+      subtitles: result.subtitles,
+      aniwatchId,
+      episodeId: targetEp.episodeId,
+    }, { headers: corsHeaders });
 
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500, headers: { "Access-Control-Allow-Origin": "*" } });
+    console.error(`[S3] Unexpected error: ${error.message}`);
+    return Response.json({ error: error.message }, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 });
