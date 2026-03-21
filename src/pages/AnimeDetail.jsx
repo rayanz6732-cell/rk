@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Link, useSearchParams } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
-import { AniwatchAPI } from '../lib/aniwatch';
 import AnimeCard from '../components/anime/AnimeCard';
 import {
   ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv,
@@ -17,15 +16,10 @@ import SeasonCard from '../components/anime/SeasonCard';
 export default function AnimeDetail() {
   const [searchParams] = useSearchParams();
   const mal_id = searchParams.get('id');
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [epPage, setEpPage] = useState(1);
   const [epJump, setEpJump] = useState('');
-  const [aniwatchEpisodes, setAniwatchEpisodes] = useState([]);
-  const [epLoading, setEpLoading] = useState(false);
 
-  // Reset state when anime changes
   useEffect(() => {
     setShowFullDesc(false);
     setEpPage(1);
@@ -36,21 +30,21 @@ export default function AnimeDetail() {
     queryKey: ['anime-detail', mal_id],
     queryFn: () => JikanAPI.getById(mal_id),
     enabled: !!mal_id,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 60,
   });
 
   const { data: characters } = useQuery({
     queryKey: ['anime-chars', mal_id],
     queryFn: () => JikanAPI.getCharacters(mal_id),
     enabled: !!mal_id,
-    staleTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 60,
   });
 
   const { data: recommendations } = useQuery({
     queryKey: ['anime-recs', mal_id],
     queryFn: () => JikanAPI.getRecommendations(mal_id),
     enabled: !!mal_id,
-    staleTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 60,
   });
 
   const { data: relations } = useQuery({
@@ -76,45 +70,19 @@ export default function AnimeDetail() {
       return allSequels;
     },
     enabled: !!mal_id,
-    staleTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const { data: episodesData } = useQuery({
+    queryKey: ['anime-episodes', mal_id, epPage],
+    queryFn: () => JikanAPI.getEpisodes(mal_id, epPage),
+    enabled: !!mal_id,
+    staleTime: 1000 * 60 * 60,
   });
 
   const seasonEntries = relations || [];
-
-  // Fetch episodes from Aniwatch (fast updates, 1-4hr after airing)
-  const fetchAniwatchEpisodes = async (animeTitle) => {
-    if (!animeTitle) return;
-    setEpLoading(true);
-    try {
-      const eps = await AniwatchAPI.getEpisodesByTitle(animeTitle);
-      setAniwatchEpisodes(eps);
-    } catch (err) {
-      console.error('Aniwatch episodes failed:', err);
-    } finally {
-      setEpLoading(false);
-    }
-  };
-
-  // Fetch episodes when anime title is available
-  useEffect(() => {
-    if (anime?.title) {
-      fetchAniwatchEpisodes(anime.title);
-    }
-  }, [anime?.title]);
-
-  // Auto-refresh episodes every 30 minutes
-  useEffect(() => {
-    if (!anime?.title) return;
-    const interval = setInterval(() => {
-      fetchAniwatchEpisodes(anime.title);
-    }, 30 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [anime?.title]);
-
-  // Paginate aniwatch episodes locally
-  const EPS_PER_PAGE = 100;
-  const pagedEpisodes = aniwatchEpisodes.slice((epPage - 1) * EPS_PER_PAGE, epPage * EPS_PER_PAGE);
-  const hasNextPage = epPage * EPS_PER_PAGE < aniwatchEpisodes.length;
+  const episodes = episodesData?.data || [];
+  const hasNextEpPage = episodesData?.pagination?.has_next_page || false;
 
   if (isLoading) {
     return (
@@ -219,7 +187,7 @@ export default function AnimeDetail() {
               {anime.episodes > 0 && (
                 <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/50">
                   <div className="flex items-center gap-1.5 text-zinc-600 text-xs mb-1"><Tv className="w-3 h-3" /> Episodes</div>
-                  <p className="text-white font-bold">{aniwatchEpisodes.length > 0 ? aniwatchEpisodes.length : anime.episodes}</p>
+                  <p className="text-white font-bold">{anime.episodes}</p>
                 </div>
               )}
               {anime.duration && (
@@ -281,20 +249,10 @@ export default function AnimeDetail() {
           </div>
         </div>
 
-        {/* Episodes — now from Aniwatch */}
+        {/* Episodes */}
         <div className="mt-12">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-white">Episodes</h2>
-              {aniwatchEpisodes.length > 0 && (
-                <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-400">
-                  {aniwatchEpisodes.length} episodes
-                </span>
-              )}
-              {epLoading && (
-                <span className="text-xs text-zinc-600 animate-pulse">Fetching latest...</span>
-              )}
-            </div>
+            <h2 className="text-xl font-bold text-white">Episodes</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -320,25 +278,19 @@ export default function AnimeDetail() {
             </form>
           </div>
 
-          {epLoading && aniwatchEpisodes.length === 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {[...Array(10)].map((_, i) => (
-                <Skeleton key={i} className="aspect-video rounded-xl bg-zinc-800" />
-              ))}
-            </div>
-          ) : pagedEpisodes.length > 0 ? (
+          {episodes.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {pagedEpisodes.map((ep) => (
+                {episodes.map((ep) => (
                   <Link
-                    key={ep.number}
-                    to={`/Watch?id=${mal_id}&ep=${ep.number}&title=${encodeURIComponent(anime.title)}`}
+                    key={ep.mal_id}
+                    to={`/Watch?id=${mal_id}&ep=${ep.episode_id || ep.mal_id}&title=${encodeURIComponent(anime.title)}`}
                     className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
                   >
                     <div className="relative aspect-video">
                       <img
-                        src={anime.cover_image}
-                        alt={`Episode ${ep.number}`}
+                        src={ep.images?.jpg?.image_url || anime.cover_image}
+                        alt={`Episode ${ep.mal_id}`}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
@@ -348,9 +300,9 @@ export default function AnimeDetail() {
                         </div>
                       </div>
                       <div className="absolute bottom-2 right-2 text-white font-black text-lg leading-none drop-shadow-lg">
-                        {ep.number}
+                        {ep.mal_id}
                       </div>
-                      {ep.isFiller && (
+                      {ep.filler && (
                         <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/80 text-black">
                           FILLER
                         </div>
@@ -358,13 +310,13 @@ export default function AnimeDetail() {
                     </div>
                     <div className="px-2 py-2">
                       <p className="text-xs text-zinc-400 line-clamp-1 group-hover:text-emerald-400 transition-colors">
-                        {ep.title || `Episode ${ep.number}`}
+                        {ep.title || `Episode ${ep.mal_id}`}
                       </p>
                     </div>
                   </Link>
                 ))}
               </div>
-              {hasNextPage && (
+              {hasNextEpPage && (
                 <Button
                   variant="outline"
                   onClick={() => setEpPage(p => p + 1)}
@@ -375,9 +327,7 @@ export default function AnimeDetail() {
               )}
             </>
           ) : (
-            !epLoading && (
-              <p className="text-zinc-600 text-sm">No episodes found.</p>
-            )
+            <p className="text-zinc-600 text-sm">No episodes found.</p>
           )}
         </div>
 
