@@ -22,7 +22,6 @@ export default function AnimeDetail() {
 
   useEffect(() => {
     setShowFullDesc(false);
-    setEpPage(1);
     window.scrollTo(0, 0);
   }, [mal_id]);
 
