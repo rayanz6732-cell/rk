@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { JikanAPI } from '../lib/jikan';
 import HeroBanner from '../components/anime/HeroBanner';
 import AnimeSection from '../components/anime/AnimeSection';
