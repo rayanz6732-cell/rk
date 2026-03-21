@@ -177,9 +177,9 @@ export default function Watch() {
               S2
             </button>
             <button
-              onClick={() => setServer('2anime')}
+              onClick={() => setServer('gogo')}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                server === '2anime' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+                server === 'gogo' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               S3
