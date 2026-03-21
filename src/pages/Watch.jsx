@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Mic, Captions } from 'lucide-react';
+import { ArrowLeft, Mic, Captions, RotateCw } from 'lucide-react';
 import CommentsSection from '../components/anime/CommentsSection';
 import { recordWatchActivity } from '../lib/streakAndBadges';
 import { blockIframeAds } from '../lib/adBlocker';
+import { JikanAPI } from '../lib/jikan';
 
 export default function Watch() {
   const [searchParams] = useSearchParams();
@@ -16,11 +17,36 @@ export default function Watch() {
   const [audioType, setAudioType] = useState('sub');
   const [server, setServer] = useState('vidsrc');
   const [resumeTime, setResumeTime] = useState(0);
+  const [episodes, setEpisodes] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
   const iframeRef = useRef(null);
 
+  const fetchEpisodes = async () => {
+    if (!mal_id) return;
+    setRefreshing(true);
+    try {
+      // Fetch all episode pages
+      const first = await JikanAPI.getEpisodes(mal_id, 1);
+      let all = first.data || [];
+      const totalPages = first.pagination?.last_visible_page || 1;
+      if (totalPages > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) => JikanAPI.getEpisodes(mal_id, i + 2))
+        );
+        rest.forEach(r => { all = all.concat(r.data || []); });
+      }
+      setEpisodes(all);
+    } catch (err) {
+      console.error('Failed to fetch episodes:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
+    fetchEpisodes();
     recordWatchActivity().catch(() => {});
-  }, [mal_id, ep]);
+  }, [mal_id]);
 
   useEffect(() => {
     if (iframeRef.current) {
@@ -56,6 +82,9 @@ export default function Watch() {
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
 
+  const currentEpNum = parseInt(ep);
+  const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 15);
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col overflow-hidden">
       {/* Top bar */}
@@ -72,7 +101,6 @@ export default function Watch() {
           Episode {ep}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Server switcher */}
           <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
             <button
               onClick={() => setServer('vidsrc')}
@@ -112,33 +140,104 @@ export default function Watch() {
         </div>
       </div>
 
-      {/* Player */}
-      <div className="flex-1">
-        <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
-          <iframe
-            ref={iframeRef}
-            key={`${mal_id}-${ep}-${audioType}-${server}`}
-            src={embedUrl}
-            className="absolute inset-0 w-full h-full"
-            allowFullScreen
-            allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-            sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
-            frameBorder="0"
-            title={`${title} Episode ${ep}`}
-          />
-        </div>
-        <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
-          <p className="text-white font-semibold">{title}</p>
-          <p className="text-zinc-500 text-sm mt-0.5">
-            Episode {ep}
-            {resumeTime > 10 && (
-              <span className="ml-3 text-emerald-500/70 text-xs">
-                ● Resumed {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
-              </span>
+      {/* Main content: player + sidebar */}
+      <div className="flex flex-col lg:flex-row flex-1">
+        {/* Video + info */}
+        <div className="flex-1 min-w-0">
+          <div className="relative w-full bg-black" style={{ paddingTop: 'min(56.25%, 75vh)' }}>
+            <iframe
+              ref={iframeRef}
+              key={`${mal_id}-${ep}-${audioType}-${server}`}
+              src={embedUrl}
+              className="absolute inset-0 w-full h-full"
+              allowFullScreen
+              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+              sandbox="allow-same-origin allow-scripts allow-presentation allow-fullscreen"
+              frameBorder="0"
+              title={`${title} Episode ${ep}`}
+            />
+          </div>
+          <div className="px-4 md:px-6 py-4 border-t border-zinc-900">
+            <p className="text-white font-semibold">{title}</p>
+            <p className="text-zinc-500 text-sm mt-0.5">
+              Episode {ep}
+              {resumeTime > 10 && (
+                <span className="ml-3 text-emerald-500/70 text-xs">
+                  ● Resumed {Math.floor(resumeTime / 60)}m {resumeTime % 60}s
+                </span>
+              )}
+            </p>
+
+            {/* Up Next — mobile/below player */}
+            {nextEps.length > 0 && (
+              <div className="mt-5 lg:hidden">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Up Next</h3>
+                  <button
+                    onClick={fetchEpisodes}
+                    disabled={refreshing}
+                    className="text-xs text-zinc-600 hover:text-emerald-500 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <RotateCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {nextEps.map(e => (
+                    <Link
+                      key={e.mal_id}
+                      to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
+                      className="group relative block rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all"
+                    >
+                      <div className="px-3 py-3 flex items-center gap-3">
+                        <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.mal_id}</span>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-zinc-500 mb-0.5">Episode {e.mal_id}</p>
+                          <p className="text-xs text-zinc-300 line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                            {e.title || `Episode ${e.mal_id}`}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             )}
-          </p>
-          <CommentsSection mal_id={mal_id} episode={ep} />
+
+            <CommentsSection mal_id={mal_id} episode={ep} />
+          </div>
         </div>
+
+        {/* Up Next Sidebar — desktop only */}
+        {nextEps.length > 0 && (
+          <div className="hidden lg:flex flex-col w-80 xl:w-96 flex-shrink-0 border-l border-zinc-900" style={{ height: 'calc(100vh - 53px)', overflowY: 'auto' }}>
+            <div className="px-4 py-3 border-b border-zinc-900 sticky top-0 bg-[#0a0a0a] z-10 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Up Next</h3>
+              <button
+                onClick={fetchEpisodes}
+                disabled={refreshing}
+                className="text-xs text-zinc-600 hover:text-emerald-500 transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                <RotateCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2 p-3">
+              {nextEps.map(e => (
+                <Link
+                  key={e.mal_id}
+                  to={`/Watch?id=${mal_id}&ep=${e.mal_id}&title=${encodeURIComponent(title)}`}
+                  className="group flex items-center gap-3 rounded-xl bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/60 transition-all px-3 py-3"
+                >
+                  <span className="text-emerald-500 font-black text-lg w-7 flex-shrink-0">{e.mal_id}</span>
+                  <div className="flex flex-col justify-center min-w-0">
+                    <p className="text-[11px] text-zinc-500">Episode {e.mal_id}</p>
+                    <p className="text-xs text-zinc-300 line-clamp-2 group-hover:text-emerald-400 transition-colors">{e.title || `Episode ${e.mal_id}`}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
