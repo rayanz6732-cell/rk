@@ -112,11 +112,33 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
+  // Fetch gogoanime src when S3 is selected
+  useEffect(() => {
+    if (server !== 'gogo') return;
+    setGogoSrc(null);
+    setGogoError(null);
+    setGogoLoading(true);
+    base44.functions.invoke('animekaiStream', {
+      mal_id,
+      episode: ep,
+      audio_type: audioType,
+      anime_title: title,
+    }).then(res => {
+      if (res?.data?.src) {
+        setGogoSrc(res.data.src);
+      } else {
+        setGogoError(res?.data?.error || 'Episode not found on this server');
+      }
+    }).catch(() => {
+      setGogoError('Failed to load from this server');
+    }).finally(() => setGogoLoading(false));
+  }, [server, mal_id, ep, audioType]);
+
   const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : server === '2embed'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : `https://2anime.xyz/embed/${mal_id}/${ep}`;
+    : gogoSrc || null;
 
   const currentEpNum = parseInt(ep);
   const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 15);
