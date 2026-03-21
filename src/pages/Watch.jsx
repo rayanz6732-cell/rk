@@ -170,7 +170,7 @@ export default function Watch() {
 
             {/* Up Next — mobile/below player */}
             {nextEps.length > 0 && (
-              <div className="mt-5 lg:hidden">
+              <div className="mt-5">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Up Next</h3>
                   <button
