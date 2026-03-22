@@ -312,51 +312,12 @@ function WideCard({ anime, lastEpisode }) {
   );
 }
 
-// ─── Hook: drag-to-scroll that works on any device ───────────────────────────
-function useDragScroll() {
-  const ref = useRef();
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let startX = 0, startScroll = 0, dragging = false;
-
-    const onTouchStart = (e) => {
-      startX = e.touches[0].clientX;
-      startScroll = el.scrollLeft;
-      dragging = true;
-    };
-    const onTouchMove = (e) => {
-      if (!dragging) return;
-      const dx = startX - e.touches[0].clientX;
-      // Only hijack if movement is more horizontal than vertical
-      const dy = Math.abs(e.touches[0].clientY - (e.touches[0].clientY));
-      if (Math.abs(dx) > 5) {
-        e.stopPropagation();
-        el.scrollLeft = startScroll + dx;
-      }
-    };
-    const onTouchEnd = () => { dragging = false; };
-
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove', onTouchMove, { passive: false });
-    el.addEventListener('touchend', onTouchEnd, { passive: true });
-    return () => {
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove', onTouchMove);
-      el.removeEventListener('touchend', onTouchEnd);
-    };
-  }, []);
-  return ref;
-}
-
-// ─── Continue Watching Row (uses drag scroll hook) ────────────────────────────
+// ─── Continue Watching Row ────────────────────────────────────────────────────
 function ContinueWatchingRow({ items }) {
-  const scrollRef = useDragScroll();
   return (
-    <div ref={scrollRef} style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-      <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
-        {items.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
-      </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}
+      className="hk-anime-grid">
+      {items.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
     </div>
   );
 }
@@ -365,7 +326,6 @@ function ContinueWatchingRow({ items }) {
 function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f472b6' }) {
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef();
-  const scrollRef = useDragScroll();
 
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
@@ -389,12 +349,11 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
           </Link>
         )}
       </div>
-      <div ref={scrollRef} style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
-          {anime.slice(0, 12).map(a => (
-            <AnimeCard key={a.mal_id} anime={a} />
-          ))}
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}
+        className="hk-anime-grid">
+        {anime.slice(0, 12).map(a => (
+          <AnimeCard key={a.mal_id} anime={a} />
+        ))}
       </div>
     </div>
   );
@@ -471,6 +430,13 @@ export default function Home() {
       <style>{`
         @keyframes hkSpin  { to{transform:rotate(360deg)} }
         @keyframes hkFloat { 0%,100%{opacity:.3;transform:translateY(0) scale(1)}50%{opacity:.75;transform:translateY(-8px) scale(1.15)} }
+
+        /* Anime card grid — matches AnimeSection behaviour */
+        .hk-anime-grid { grid-template-columns: repeat(2, 1fr); }
+        @media (min-width: 480px)  { .hk-anime-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 768px)  { .hk-anime-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 1024px) { .hk-anime-grid { grid-template-columns: repeat(5, 1fr); } }
+        @media (min-width: 1280px) { .hk-anime-grid { grid-template-columns: repeat(6, 1fr); } }
 
         /* Desktop: sidebar beside content */
         .hk-layout { flex-direction: row; }
