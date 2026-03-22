@@ -135,16 +135,61 @@ function HeroBanner({ featured }) {
 // ─── Search Bar ───────────────────────────────────────────────────────────────
 function SearchBar() {
   const [val, setVal] = useState('');
+  const [focused, setFocused] = useState(false);
+
+  const handleSearch = () => {
+    const trimmed = val.trim();
+    if (trimmed) {
+      window.location.href = `/Search?q=${encodeURIComponent(trimmed)}`;
+    }
+  };
+
+  const handleKey = (e) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
   return (
     <div style={{ padding: '24px 28px 0' }}>
-      <Link to={val ? `/Search?q=${encodeURIComponent(val)}` : '/Search'} style={{ textDecoration: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '12px 18px', transition: 'border-color 0.2s', cursor: 'text' }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(244,114,182,0.35)'}
-          onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'}>
-          <Search size={16} style={{ color: '#334155', flexShrink: 0 }} />
-          <span style={{ fontSize: 14, color: '#334155', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Search anime, genres, studios...</span>
-        </div>
-      </Link>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${focused ? 'rgba(244,114,182,0.5)' : 'rgba(255,255,255,0.09)'}`,
+        borderRadius: 14, padding: '12px 18px',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+        boxShadow: focused ? '0 0 0 3px rgba(244,114,182,0.1)' : 'none',
+      }}>
+        <Search size={16} style={{ color: focused ? '#f472b6' : '#334155', flexShrink: 0, transition: 'color 0.2s', cursor: 'pointer' }} onClick={handleSearch} />
+        <input
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={handleKey}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder="Search anime, genres, studios..."
+          style={{
+            flex: 1, background: 'none', border: 'none', outline: 'none',
+            color: '#e2e8f0', fontSize: 14,
+            fontFamily: 'Plus Jakarta Sans, sans-serif',
+            caretColor: '#f472b6',
+          }}
+        />
+        {val.trim() && (
+          <button
+            onClick={handleSearch}
+            style={{
+              flexShrink: 0, padding: '5px 14px', borderRadius: 9,
+              background: 'linear-gradient(135deg,#f472b6,#a855f7)',
+              border: 'none', color: '#000', fontSize: 12, fontWeight: 800,
+              cursor: 'pointer', fontFamily: 'Plus Jakarta Sans, sans-serif',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = 0.85}
+            onMouseLeave={e => e.currentTarget.style.opacity = 1}
+          >
+            Search
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -461,4 +506,4 @@ export default function Home() {
       </div>
     </>
   );
-          }
+}
