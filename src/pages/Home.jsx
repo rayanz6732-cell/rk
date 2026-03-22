@@ -197,7 +197,7 @@ function SearchBar() {
 // ─── Genre Filter Chips ───────────────────────────────────────────────────────
 function GenreChips({ active, onChange }) {
   return (
-    <div className="hk-genres" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 28px 0', scrollbarWidth: 'none' }}>
+    <div className="hk-genres" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 28px 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
       {GENRES.map(g => (
         <button key={g} onClick={() => onChange(g)}
           style={{
@@ -338,10 +338,12 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
           </Link>
         )}
       </div>
-      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'none' }}>
-        {anime.slice(0, 12).map(a => (
-          <AnimeCard key={a.mal_id} anime={a} />
-        ))}
+      <div className="hk-row-wrap">
+        <div className="hk-scroll-row">
+          {anime.slice(0, 12).map(a => (
+            <AnimeCard key={a.mal_id} anime={a} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -421,6 +423,14 @@ export default function Home() {
         .hk-scroll::-webkit-scrollbar { display: none; }
         .hk-scroll { scrollbar-width: none; }
 
+        /* Prevent the whole page scrolling sideways */
+        .hk-root { overflow-x: hidden; }
+
+        /* Each scroll row must be clipped to its own container */
+        .hk-row-wrap { overflow: hidden; }
+        .hk-scroll-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .hk-scroll-row::-webkit-scrollbar { display: none; }
+
         /* Desktop: sidebar beside content */
         .hk-layout { flex-direction: row; }
         .hk-sidebar { width: 272px; flex-shrink: 0; position: sticky; top: 80px; }
@@ -439,7 +449,7 @@ export default function Home() {
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#06060d', color: '#e2e8f0', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+      <div className="hk-root" style={{ minHeight: '100vh', background: '#06060d', color: '#e2e8f0', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
 
         {/* ── Hero ── */}
         <HeroBanner featured={featured} />
@@ -475,8 +485,10 @@ export default function Home() {
                   <Clock size={15} style={{ color: '#f472b6' }} />
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Continue Watching</span>
                 </div>
-                <div className="hk-scroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6 }}>
-                  {continueWatching.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
+                <div className="hk-row-wrap">
+                  <div className="hk-scroll-row">
+                    {continueWatching.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
+                  </div>
                 </div>
               </div>
             )}
