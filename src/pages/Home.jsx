@@ -338,8 +338,8 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
           </Link>
         )}
       </div>
-      <div className="hk-row-wrap">
-        <div className="hk-scroll-row">
+      <div style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ display: 'flex', gap: 12, paddingBottom: 6, width: 'max-content' }}>
           {anime.slice(0, 12).map(a => (
             <AnimeCard key={a.mal_id} anime={a} />
           ))}
@@ -420,16 +420,12 @@ export default function Home() {
       <style>{`
         @keyframes hkSpin  { to{transform:rotate(360deg)} }
         @keyframes hkFloat { 0%,100%{opacity:.3;transform:translateY(0) scale(1)}50%{opacity:.75;transform:translateY(-8px) scale(1.15)} }
-        .hk-scroll::-webkit-scrollbar { display: none; }
-        .hk-scroll { scrollbar-width: none; }
 
         /* Prevent the whole page scrolling sideways */
         .hk-root { overflow-x: hidden; }
 
-        /* Each scroll row must be clipped to its own container */
-        .hk-row-wrap { overflow: hidden; }
-        .hk-scroll-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-        .hk-scroll-row::-webkit-scrollbar { display: none; }
+        /* Each scroll row clips to its lane */
+        .hk-root .hk-section > div { max-width: 100%; }
 
         /* Desktop: sidebar beside content */
         .hk-layout { flex-direction: row; }
@@ -485,8 +481,8 @@ export default function Home() {
                   <Clock size={15} style={{ color: '#f472b6' }} />
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Continue Watching</span>
                 </div>
-                <div className="hk-row-wrap">
-                  <div className="hk-scroll-row">
+                <div style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+                  <div style={{ display: 'flex', gap: 12, paddingBottom: 6, width: 'max-content' }}>
                     {continueWatching.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
                   </div>
                 </div>
