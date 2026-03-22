@@ -312,18 +312,69 @@ function WideCard({ anime, lastEpisode }) {
   );
 }
 
+// ─── Hook: drag-to-scroll that works on any device ───────────────────────────
+function useDragScroll() {
+  const ref = useRef();
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let startX = 0, startScroll = 0, dragging = false;
+
+    const onTouchStart = (e) => {
+      startX = e.touches[0].clientX;
+      startScroll = el.scrollLeft;
+      dragging = true;
+    };
+    const onTouchMove = (e) => {
+      if (!dragging) return;
+      const dx = startX - e.touches[0].clientX;
+      // Only hijack if movement is more horizontal than vertical
+      const dy = Math.abs(e.touches[0].clientY - (e.touches[0].clientY));
+      if (Math.abs(dx) > 5) {
+        e.stopPropagation();
+        el.scrollLeft = startScroll + dx;
+      }
+    };
+    const onTouchEnd = () => { dragging = false; };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+  return ref;
+}
+
+// ─── Continue Watching Row (uses drag scroll hook) ────────────────────────────
+function ContinueWatchingRow({ items }) {
+  const scrollRef = useDragScroll();
+  return (
+    <div ref={scrollRef} style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
+        {items.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
+      </div>
+    </div>
+  );
+}
+
 // ─── Section Row ──────────────────────────────────────────────────────────────
 function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f472b6' }) {
   const [visible, setVisible] = useState(false);
-  const ref = useRef();
+  const sectionRef = useRef();
+  const scrollRef = useDragScroll();
+
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
-    if (ref.current) obs.observe(ref.current);
+    if (sectionRef.current) obs.observe(sectionRef.current);
     return () => obs.disconnect();
   }, []);
 
   return (
-    <div ref={ref} className="hk-section" style={{ padding: '0 28px', marginBottom: 32, opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
+    <div ref={sectionRef} className="hk-section" style={{ padding: '0 28px', marginBottom: 32, opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: `linear-gradient(135deg,${accent},#a855f7)` }} />
@@ -338,7 +389,7 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
           </Link>
         )}
       </div>
-      <div style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+      <div ref={scrollRef} style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
           {anime.slice(0, 12).map(a => (
             <AnimeCard key={a.mal_id} anime={a} />
@@ -469,17 +520,13 @@ export default function Home() {
 
             {/* Continue Watching */}
             {continueWatching.length > 0 && (
-              <div style={{ marginBottom: 32, padding: '0 0 0 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, padding: '0 0' }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,#f472b6,#a855f7)' }} />
                   <Clock size={15} style={{ color: '#f472b6' }} />
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Continue Watching</span>
                 </div>
-                <div style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
-                  <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
-                    {continueWatching.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
-                  </div>
-                </div>
+                <ContinueWatchingRow items={continueWatching} />
               </div>
             )}
 
