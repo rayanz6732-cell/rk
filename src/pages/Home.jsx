@@ -149,7 +149,7 @@ function SearchBar() {
   };
 
   return (
-    <div style={{ padding: '24px 28px 0' }}>
+    <div className="hk-search" style={{ padding: '24px 28px 0' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12,
         background: 'rgba(255,255,255,0.04)',
@@ -197,7 +197,7 @@ function SearchBar() {
 // ─── Genre Filter Chips ───────────────────────────────────────────────────────
 function GenreChips({ active, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 28px 0', scrollbarWidth: 'none' }}>
+    <div className="hk-genres" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 28px 0', scrollbarWidth: 'none' }}>
       {GENRES.map(g => (
         <button key={g} onClick={() => onChange(g)}
           style={{
@@ -323,7 +323,7 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
   }, []);
 
   return (
-    <div ref={ref} style={{ padding: '0 28px', marginBottom: 32, opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
+    <div ref={ref} className="hk-section" style={{ padding: '0 28px', marginBottom: 32, opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: `linear-gradient(135deg,${accent},#a855f7)` }} />
@@ -420,6 +420,23 @@ export default function Home() {
         @keyframes hkFloat { 0%,100%{opacity:.3;transform:translateY(0) scale(1)}50%{opacity:.75;transform:translateY(-8px) scale(1.15)} }
         .hk-scroll::-webkit-scrollbar { display: none; }
         .hk-scroll { scrollbar-width: none; }
+
+        /* Desktop: sidebar beside content */
+        .hk-layout { flex-direction: row; }
+        .hk-sidebar { width: 272px; flex-shrink: 0; position: sticky; top: 80px; }
+        .hk-sidebar-mobile { display: none; }
+
+        /* Mobile: stack sidebar below content */
+        @media (max-width: 768px) {
+          .hk-layout { flex-direction: column; padding: 16px 16px 0 !important; gap: 0 !important; }
+          .hk-sidebar { display: none; }
+          .hk-sidebar-mobile { display: block; padding: 24px 16px 0 !important; }
+          .hk-search  { padding: 16px 16px 0 !important; }
+          .hk-genres  { padding: 14px 16px 0 !important; }
+          .hk-signup  { padding: 16px 16px 0 !important; }
+          .hk-live    { padding: 10px 16px 0 !important; }
+          .hk-section { padding: 0 !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#06060d', color: '#e2e8f0', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
@@ -428,7 +445,7 @@ export default function Home() {
         <HeroBanner featured={featured} />
 
         {/* ── Live indicator ── */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '14px 28px 0' }}>
+        <div className="hk-live" style={{ display: 'flex', justifyContent: 'flex-end', padding: '14px 28px 0' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#4ade80', fontWeight: 700, letterSpacing: 0.5 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', animation: 'hkFloat 2s ease-in-out infinite', boxShadow: '0 0 6px #4ade80' }} />
             Live from MyAnimeList
@@ -442,12 +459,12 @@ export default function Home() {
         <GenreChips active={activeGenre} onChange={setActiveGenre} />
 
         {/* ── Signup nudge ── */}
-        <div style={{ padding: '24px 28px 0' }}>
+        <div className="hk-signup" style={{ padding: '24px 28px 0' }}>
           <SignupSection />
         </div>
 
         {/* ── Main layout ── */}
-        <div style={{ display: 'flex', gap: 28, padding: '28px 28px 0', alignItems: 'flex-start' }}>
+        <div className="hk-layout" style={{ display: 'flex', gap: 28, padding: '28px 28px 0', alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
 
             {/* Continue Watching */}
@@ -496,10 +513,15 @@ export default function Home() {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div style={{ width: 272, flexShrink: 0, position: 'sticky', top: 80 }}>
+          {/* Sidebar — hidden on mobile, shown on desktop */}
+          <div className="hk-sidebar">
             <TrendingSidebar trending={trending} />
           </div>
+        </div>
+
+        {/* Trending on mobile — shown below main content */}
+        <div className="hk-sidebar-mobile" style={{ padding: '0 28px' }}>
+          <TrendingSidebar trending={trending} />
         </div>
 
         <div style={{ height: 60 }} />
