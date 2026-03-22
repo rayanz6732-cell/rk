@@ -43,6 +43,16 @@ export default function Layout() {
     const root = document.documentElement;
     root.style.setProperty('--primary', theme.colors.primary);
     root.style.setProperty('--ring',    theme.colors.primary);
+
+    // --rk-accent drives the sidebar, topbar and all custom components
+    const ACCENT_MAP = {
+      default: '#4ade80', cherry: '#f472b6',
+      neon: '#a855f7',   aurora: '#34d399',
+      ocean: '#38bdf8',  sunset: '#fb923c',
+    };
+    const accent = ACCENT_MAP[theme.id] || '#f472b6';
+    root.style.setProperty('--rk-accent', accent);
+
     let styleEl = document.getElementById('theme-override-style');
     if (!styleEl) {
       styleEl = document.createElement('style');
@@ -64,6 +74,22 @@ export default function Layout() {
       .hover\\:border-emerald-500\\/40:hover { border-color: ${hslColor}40 !important; }
       .hover\\:border-emerald-500\\/60:hover { border-color: ${hslColor}60 !important; }
       .ring-emerald-500 { --tw-ring-color: ${hslColor} !important; }
+
+      /* Sidebar + topbar theme variables — update automatically on theme change */
+      .rksb-logo-mark          { background: linear-gradient(135deg, var(--rk-accent), #a855f7) !important; }
+      .rksb-logo-txt           { background: linear-gradient(90deg, var(--rk-accent), #a855f7, var(--rk-accent)) !important; -webkit-background-clip: text !important; background-clip: text !important; }
+      .rksb-item.active        { background: color-mix(in srgb, var(--rk-accent) 12%, transparent) !important; }
+      .rksb-item.active::after { background: linear-gradient(to bottom, var(--rk-accent), #a855f7) !important; }
+      .rksb-item.active .rksb-icon { background: linear-gradient(135deg, color-mix(in srgb, var(--rk-accent) 25%, transparent), rgba(168,85,247,0.15)) !important; border-color: color-mix(in srgb, var(--rk-accent) 40%, transparent) !important; }
+      .rksb-glow-t             { background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--rk-accent) 10%, transparent) 0%, transparent 70%) !important; }
+      .rksb-avatar-ring        { background: linear-gradient(135deg, var(--rk-accent), #a855f7) !important; animation: rksbGlow 3s ease-in-out infinite !important; }
+      .rksb-avatar-inner       { color: var(--rk-accent) !important; }
+      .rksb-uname              { } 
+      .rksb-admin              { color: var(--rk-accent) !important; background: color-mix(in srgb, var(--rk-accent) 15%, transparent) !important; border-color: color-mix(in srgb, var(--rk-accent) 30%, transparent) !important; }
+      .rksb-section            { }
+      .rksb-logo               { }
+      .rk-topbar-link:hover    { color: var(--rk-accent) !important; }
+      .rksb-item.active .rksb-label { color: #f1f5f9 !important; }
     `;
   };
 
@@ -210,5 +236,3 @@ export default function Layout() {
     </div>
   );
 }
-
-
