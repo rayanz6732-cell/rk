@@ -223,7 +223,7 @@ function AnimeCard({ anime, showProgress, lastEpisode }) {
   return (
     <Link
       to={`/Watch?id=${anime.mal_id}&ep=${lastEpisode || 1}&title=${encodeURIComponent(anime.title)}`}
-      style={{ textDecoration: 'none', flexShrink: 0, width: 130, display: 'block' }}
+      style={{ textDecoration: 'none', display: 'block' }}
     >
       <div style={{
         borderRadius: 14, overflow: 'hidden',
@@ -282,7 +282,7 @@ function WideCard({ anime, lastEpisode }) {
   return (
     <Link
       to={`/Watch?id=${anime.mal_id}&ep=${lastEpisode || 1}&title=${encodeURIComponent(anime.title)}`}
-      style={{ textDecoration: 'none', flexShrink: 0, width: 200, display: 'block' }}
+      style={{ textDecoration: 'none', display: 'block' }}
     >
       <div style={{
         borderRadius: 16, overflow: 'hidden',
@@ -338,7 +338,7 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
           </Link>
         )}
       </div>
-      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'none' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
         {anime.slice(0, 12).map(a => (
           <AnimeCard key={a.mal_id} anime={a} />
         ))}
@@ -458,7 +458,7 @@ export default function Home() {
                   <Clock size={15} style={{ color: '#f472b6' }} />
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Continue Watching</span>
                 </div>
-                <div className="hk-scroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
                   {continueWatching.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
                 </div>
               </div>
@@ -497,7 +497,7 @@ export default function Home() {
           </div>
 
           {/* Sidebar */}
-          <div style={{ width: 272, flexShrink: 0, position: 'sticky', top: 80 }}>
+          <div style={{ width: 340, flexShrink: 0, position: 'sticky', top: 80 }}>
             <TrendingSidebar trending={trending} />
           </div>
         </div>
