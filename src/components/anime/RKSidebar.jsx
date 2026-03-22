@@ -250,11 +250,11 @@ export default function RKSidebar({ user }) {
           }} />
         ))}
 
-        {/* Logo */}
-        <div className="rksb-logo">
+        {/* Logo — clicking takes you to homepage */}
+        <Link to="/Home" className="rksb-logo" style={{ textDecoration: 'none' }}>
           <div className="rksb-logo-mark">RK</div>
           <span className="rksb-logo-txt">RK</span>
-        </div>
+        </Link>
 
         {/* Nav groups */}
         <div className="rksb-nav">
