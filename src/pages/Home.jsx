@@ -315,9 +315,10 @@ function WideCard({ anime, lastEpisode }) {
 // ─── Continue Watching Row ────────────────────────────────────────────────────
 function ContinueWatchingRow({ items }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}
-      className="hk-anime-grid">
-      {items.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
+    <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
+        {items.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
+      </div>
     </div>
   );
 }
@@ -349,11 +350,12 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
           </Link>
         )}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}
-        className="hk-anime-grid">
-        {anime.slice(0, 12).map(a => (
-          <AnimeCard key={a.mal_id} anime={a} />
-        ))}
+      <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
+          {anime.slice(0, 12).map(a => (
+            <AnimeCard key={a.mal_id} anime={a} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -430,13 +432,6 @@ export default function Home() {
       <style>{`
         @keyframes hkSpin  { to{transform:rotate(360deg)} }
         @keyframes hkFloat { 0%,100%{opacity:.3;transform:translateY(0) scale(1)}50%{opacity:.75;transform:translateY(-8px) scale(1.15)} }
-
-        /* Anime card grid — matches AnimeSection behaviour */
-        .hk-anime-grid { grid-template-columns: repeat(2, 1fr); }
-        @media (min-width: 480px)  { .hk-anime-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (min-width: 768px)  { .hk-anime-grid { grid-template-columns: repeat(4, 1fr); } }
-        @media (min-width: 1024px) { .hk-anime-grid { grid-template-columns: repeat(5, 1fr); } }
-        @media (min-width: 1280px) { .hk-anime-grid { grid-template-columns: repeat(6, 1fr); } }
 
         /* Desktop: sidebar beside content */
         .hk-layout { flex-direction: row; }
