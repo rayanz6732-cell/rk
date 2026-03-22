@@ -339,7 +339,7 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
         )}
       </div>
       <div style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-        <div style={{ display: 'flex', gap: 12, paddingBottom: 6, width: 'max-content' }}>
+        <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
           {anime.slice(0, 12).map(a => (
             <AnimeCard key={a.mal_id} anime={a} />
           ))}
@@ -421,12 +421,6 @@ export default function Home() {
         @keyframes hkSpin  { to{transform:rotate(360deg)} }
         @keyframes hkFloat { 0%,100%{opacity:.3;transform:translateY(0) scale(1)}50%{opacity:.75;transform:translateY(-8px) scale(1.15)} }
 
-        /* Prevent the whole page scrolling sideways */
-        .hk-root { overflow-x: hidden; }
-
-        /* Each scroll row clips to its lane */
-        .hk-root .hk-section > div { max-width: 100%; }
-
         /* Desktop: sidebar beside content */
         .hk-layout { flex-direction: row; }
         .hk-sidebar { width: 272px; flex-shrink: 0; position: sticky; top: 80px; }
@@ -445,7 +439,7 @@ export default function Home() {
         }
       `}</style>
 
-      <div className="hk-root" style={{ minHeight: '100vh', background: '#06060d', color: '#e2e8f0', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#06060d', color: '#e2e8f0', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
 
         {/* ── Hero ── */}
         <HeroBanner featured={featured} />
@@ -482,7 +476,7 @@ export default function Home() {
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Continue Watching</span>
                 </div>
                 <div style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-                  <div style={{ display: 'flex', gap: 12, paddingBottom: 6, width: 'max-content' }}>
+                  <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
                     {continueWatching.map(a => <WideCard key={a.mal_id} anime={a} lastEpisode={a.lastEpisode} />)}
                   </div>
                 </div>
