@@ -281,7 +281,7 @@ function WideCard({ anime, lastEpisode }) {
   const img = anime.images?.jpg?.large_image_url || anime.cover_image;
   return (
     <Link
-      to={`/Watch?id=${anime.mal_id}&ep=${lastEpisode || 1}&title=${encodeURIComponent(anime.title)}`}
+      to={`/AnimeDetail?id=${anime.mal_id}`}
       style={{ textDecoration: 'none', flexShrink: 0, width: 200, display: 'block' }}
     >
       <div style={{
