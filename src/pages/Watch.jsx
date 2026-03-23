@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Mic, Captions, RotateCw } from 'lucide-react';
 import CommentsSection from '../components/anime/CommentsSection';
@@ -25,13 +25,40 @@ export default function Watch() {
   const [gogoError, setGogoError] = useState(null);
   const iframeRef = useRef(null);
 
-  // Fetch Jikan episodes (metadata) + Aniwatch episode count (faster updates)
-  // Merge: use Jikan for titles/filler, Aniwatch to surface episodes Jikan hasn't listed yet
+  // ─── FIX 1: Stable iframe key ─────────────────────────────────────────────
+  // Only rekey when the actual source identity changes, NOT on every render.
+  // embedUrl reference was changing every render because it was computed inline —
+  // moving it to useMemo gives a stable reference.
+  const embedUrl = useMemo(() => {
+    if (server === 'vidsrc')
+      return `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`;
+    if (server === '2embed')
+      return `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`;
+    return gogoSrc || null;
+  }, [server, mal_id, ep, audioType, gogoSrc]);
+
+  // ─── FIX 2: Stable iframe key that only changes when source truly changes ──
+  // Do NOT include embedUrl itself — for gogo it starts null then resolves,
+  // which would cause two mounts. Use the identity fields instead.
+  const iframeKey = `${mal_id}-${ep}-${audioType}-${server}`;
+
+  // ─── FIX 3: blockIframeAds runs ONCE after iframe loads, not on every state change ──
+  // Previously ran in a useEffect with [mal_id, ep, audioType, server] which fired
+  // on every change BEFORE the iframe had even loaded its new src.
+  const handleIframeLoad = () => {
+    if (iframeRef.current) {
+      // Small defer so the iframe document is ready
+      setTimeout(() => {
+        try { blockIframeAds(iframeRef.current); } catch {}
+      }, 500);
+    }
+  };
+
+  // ─── Episode fetching ──────────────────────────────────────────────────────
   const fetchEpisodes = async () => {
     if (!mal_id) return;
     setRefreshing(true);
     try {
-      // Fetch Jikan metadata and Aniwatch count in parallel
       const [firstPage, aniwatchRes] = await Promise.all([
         JikanAPI.getEpisodes(mal_id, 1),
         base44.functions.invoke('aniwatchProxy', { title }).catch(() => null),
@@ -46,11 +73,8 @@ export default function Watch() {
         rest.forEach(r => { jikanEps = jikanEps.concat(r.data || []); });
       }
 
-      // Aniwatch episodes (faster source — may have newer eps)
       const aniwatchEps = aniwatchRes?.data?.episodes || [];
       const aniwatchCount = aniwatchEps.length;
-
-      // Build merged list: Jikan episodes enriched with aniwatch, plus any extras aniwatch has
       const jikanNums = new Set(jikanEps.map(e => e.mal_id));
       const extras = [];
       for (let i = jikanEps.length + 1; i <= aniwatchCount; i++) {
@@ -64,7 +88,6 @@ export default function Watch() {
           });
         }
       }
-
       setEpisodes([...jikanEps, ...extras]);
     } catch (err) {
       console.error('Failed to fetch episodes:', err);
@@ -73,21 +96,27 @@ export default function Watch() {
     }
   };
 
+  // ─── FIX 4: Separate episode fetch from activity recording ────────────────
+  // Previously both fired together on mount causing a heavy simultaneous load.
+  // Activity recording is deferred by 2s so the player gets priority.
   useEffect(() => {
     fetchEpisodes();
-    recordWatchActivity().catch(() => {});
 
-    // Auto-refresh every 30 minutes to pick up new episodes from Aniwatch
-    const interval = setInterval(fetchEpisodes, 30 * 60 * 1000);
-    return () => clearInterval(interval);
+    // Defer activity recording so it doesn't compete with episode fetch + iframe load
+    const activityTimer = setTimeout(() => {
+      recordWatchActivity().catch(() => {});
+    }, 2000);
+
+    // Auto-refresh every 30 min for new episodes
+    const refreshInterval = setInterval(fetchEpisodes, 30 * 60 * 1000);
+
+    return () => {
+      clearTimeout(activityTimer);
+      clearInterval(refreshInterval);
+    };
   }, [mal_id]);
 
-  useEffect(() => {
-    if (iframeRef.current) {
-      blockIframeAds(iframeRef.current);
-    }
-  }, [mal_id, ep, audioType, server]);
-
+  // ─── Resume time ──────────────────────────────────────────────────────────
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
@@ -96,6 +125,7 @@ export default function Watch() {
     }
   }, [storageKey]);
 
+  // ─── Progress saving ──────────────────────────────────────────────────────
   const sessionStartRef = useRef(Date.now());
   useEffect(() => {
     sessionStartRef.current = Date.now();
@@ -104,7 +134,8 @@ export default function Watch() {
       if (elapsed > 10) localStorage.setItem(storageKey, String(elapsed));
     };
     window.addEventListener('beforeunload', save);
-    const interval = setInterval(save, 15000);
+    // ─── FIX 5: Save every 30s instead of 15s to reduce main-thread interruptions ──
+    const interval = setInterval(save, 30000);
     return () => {
       save();
       window.removeEventListener('beforeunload', save);
@@ -112,7 +143,7 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  // Fetch gogoanime src when S3 is selected
+  // ─── Gogo / S3 fetch ──────────────────────────────────────────────────────
   useEffect(() => {
     if (server !== 'gogo') return;
     setGogoSrc(null);
@@ -133,12 +164,6 @@ export default function Watch() {
       setGogoError('Failed to load from this server');
     }).finally(() => setGogoLoading(false));
   }, [server, mal_id, ep, audioType]);
-
-  const embedUrl = server === 'vidsrc'
-    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
-    : server === '2embed'
-    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : gogoSrc || null;
 
   const currentEpNum = parseInt(ep);
   const nextEps = episodes.filter(e => e.mal_id > currentEpNum).slice(0, 15);
@@ -228,13 +253,14 @@ export default function Watch() {
             ) : embedUrl ? (
               <iframe
                 ref={iframeRef}
-                key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
+                key={iframeKey}
                 src={embedUrl}
                 className="absolute inset-0 w-full h-full"
                 allowFullScreen
                 allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
                 frameBorder="0"
                 title={`${title} Episode ${ep}`}
+                onLoad={handleIframeLoad}
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
