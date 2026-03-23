@@ -305,7 +305,12 @@ export default function AnimeDetail() {
             </form>
           </div>
 
-          {episodes.length > 0 ? (
+          {episodesLoading ? (
+            <div className="flex items-center gap-3 py-6">
+              <div className="w-5 h-5 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
+              <p className="text-zinc-500 text-sm">Loading episodes...</p>
+            </div>
+          ) : episodes.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {episodes.map((ep) => (
