@@ -72,7 +72,7 @@ export default function AnimeDetail() {
     staleTime: 1000 * 60 * 60,
   });
 
-  const { data: episodesData } = useQuery({
+  const { data: episodesData, isLoading: episodesLoading } = useQuery({
     queryKey: ['anime-episodes-merged', mal_id],
     queryFn: async () => {
       // Fetch Jikan (all pages) + Aniwatch in parallel

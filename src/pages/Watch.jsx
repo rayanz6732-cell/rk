@@ -228,7 +228,7 @@ export default function Watch() {
             ) : embedUrl ? (
               <iframe
                 ref={iframeRef}
-                key={`${mal_id}-${ep}-${audioType}-${server}-${embedUrl}`}
+                key={`${mal_id}-${ep}-${audioType}-${server}`}
                 src={embedUrl}
                 className="absolute inset-0 w-full h-full"
                 allowFullScreen
