@@ -1,9 +1,7 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
-
 export default function SignupSection() {
   const handleSignUp = () => {
-    base44.auth.redirectToLogin(window.location.href);
+    window.location.href = `/login?next=${encodeURIComponent(window.location.href)}`;
   };
 
   return (

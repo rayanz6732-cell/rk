@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
-import { base44 } from '@/api/base44Client';
+// base44 removed — using Vercel API routes
 import AnimeCard from '../components/anime/AnimeCard';
 import {
   ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv,
@@ -78,7 +78,7 @@ export default function AnimeDetail() {
       // Fetch Jikan (all pages) + Aniwatch in parallel
       const [firstPage, aniwatchRes] = await Promise.all([
         JikanAPI.getEpisodes(mal_id, 1),
-        base44.functions.invoke('aniwatchProxy', { title: anime?.title || '' }).catch(() => null),
+        fetch('/api/episodes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: anime?.title || '' }) }).then(r => r.json()).catch(() => null),
       ]);
 
       let jikanEps = firstPage.data || [];
@@ -91,7 +91,7 @@ export default function AnimeDetail() {
       }
 
       // Merge Aniwatch extras (episodes Jikan hasn't listed yet)
-      const aniwatchEps = aniwatchRes?.data?.episodes || [];
+      const aniwatchEps = aniwatchRes?.episodes || [];
       const aniwatchCount = aniwatchEps.length;
       const jikanNums = new Set(jikanEps.map(e => e.mal_id));
       const extras = [];

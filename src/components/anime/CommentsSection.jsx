@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { Comments } from '@/lib/supabaseEntities';
 import { Send, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -10,13 +10,13 @@ export default function CommentsSection({ mal_id, episode }) {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchComments = async () => {
-    const data = await base44.entities.Comment.filter({ anime_id: String(mal_id) }, '-created_date', 50);
+    const data = await Comments.filter({ anime_id: String(mal_id) });
     setComments(data);
   };
 
   useEffect(() => {
     fetchComments();
-    const unsub = base44.entities.Comment.subscribe((event) => {
+    const unsub = Comments.subscribe((event) => {
       if (event.data?.anime_id === String(mal_id)) {
         fetchComments();
       }
@@ -28,7 +28,7 @@ export default function CommentsSection({ mal_id, episode }) {
     e.preventDefault();
     if (!text.trim()) return;
     setSubmitting(true);
-    await base44.entities.Comment.create({
+    await Comments.create({
       anime_id: String(mal_id),
       episode: String(episode),
       text: text.trim(),
@@ -57,7 +57,6 @@ export default function CommentsSection({ mal_id, episode }) {
         </h3>
       </div>
 
-      {/* Input form */}
       <form onSubmit={handleSubmit} className="mb-6 space-y-2">
         <input
           type="text"
@@ -84,7 +83,6 @@ export default function CommentsSection({ mal_id, episode }) {
         </div>
       </form>
 
-      {/* Comments list */}
       <div className="space-y-3">
         {comments.length === 0 ? (
           <p className="text-zinc-600 text-sm text-center py-6">No comments yet. Be the first!</p>
@@ -97,7 +95,7 @@ export default function CommentsSection({ mal_id, episode }) {
                   {c.episode && (
                     <span className="text-[10px] text-zinc-600 bg-zinc-800 rounded px-1.5 py-0.5">Ep {c.episode}</span>
                   )}
-                  <span className="text-[11px] text-zinc-600">{formatTime(c.created_date)}</span>
+                  <span className="text-[11px] text-zinc-600">{formatTime(c.created_at)}</span>
                 </div>
               </div>
               <p className="text-sm text-zinc-300 leading-relaxed">{c.text}</p>

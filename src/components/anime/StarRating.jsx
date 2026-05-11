@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { UserRatings } from '@/lib/supabaseEntities';
 import { Star } from 'lucide-react';
 
 export default function StarRating({ mal_id, animeTitle }) {
@@ -9,7 +9,7 @@ export default function StarRating({ mal_id, animeTitle }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    base44.entities.UserRating.filter({ mal_id: String(mal_id) }, '-created_date', 1)
+    UserRatings.filter({ mal_id: String(mal_id) }, '-created_at', 1)
       .then(results => {
         if (results.length > 0) {
           setRating(results[0].rating);
@@ -22,14 +22,14 @@ export default function StarRating({ mal_id, animeTitle }) {
     setSaving(true);
     setRating(value);
     if (existingId) {
-      await base44.entities.UserRating.update(existingId, { rating: value });
+      await UserRatings.update(existingId, { rating: value });
     } else {
-      const created = await base44.entities.UserRating.create({
+      const created = await UserRatings.create({
         mal_id: String(mal_id),
         anime_title: animeTitle,
         rating: value,
       });
-      setExistingId(created.id);
+      setExistingId(created?.id);
     }
     setSaving(false);
   };
