@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { base44 } from '@/api/base44Client';
 
 export const BADGES = [
   { id: 'first_watch', label: 'First Watch', emoji: '🎬', desc: 'Watched your first episode' },
@@ -34,25 +34,17 @@ function getBadgesToAward(totalEps, streak, isNightOwl, existingBadges = []) {
 }
 
 export async function recordWatchActivity() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await base44.auth.me();
   if (!user) return;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return;
-
   const today = new Date().toISOString().split('T')[0];
-  const lastDate = profile.last_watched_date;
+  const lastDate = user.last_watched_date;
   const isNightOwl = new Date().getHours() >= 0 && new Date().getHours() < 5;
 
-  let streak = profile.watch_streak || 0;
+  let streak = user.watch_streak || 0;
 
   if (lastDate === today) {
-    // Already watched today
+    // Already watched today, just increment episodes
   } else if (lastDate) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -62,15 +54,17 @@ export async function recordWatchActivity() {
     streak = 1;
   }
 
-  const totalEps = (profile.total_episodes_watched || 0) + 1;
-  const { allBadges } = getBadgesToAward(totalEps, streak, isNightOwl, profile.badges || []);
-  const totalMinutes = (profile.total_watch_minutes || 0) + 24;
+  const totalEps = (user.total_episodes_watched || 0) + 1;
+  const { allBadges } = getBadgesToAward(totalEps, streak, isNightOwl, user.badges || []);
 
-  await supabase.from('profiles').update({
+  // Add ~24 minutes of watch time per episode
+  const totalMinutes = (user.total_watch_minutes || 0) + 24;
+
+  await base44.auth.updateMe({
     watch_streak: streak,
     last_watched_date: today,
     total_episodes_watched: totalEps,
     total_watch_minutes: totalMinutes,
     badges: allBadges,
-  }).eq('id', user.id);
+  });
 }

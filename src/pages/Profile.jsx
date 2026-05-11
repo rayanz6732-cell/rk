@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getMe, updateMe } from '@/lib/supabaseAuth';
+import { base44 } from '@/api/base44Client';
 import { BADGES } from '../lib/streakAndBadges';
 import { Flame, Tv, Award, User, Clock, Edit3, X, Camera, MapPin, Heart, MessageCircle, UserPlus, UserCheck } from 'lucide-react';
 import AdminSyncPanel from '../components/anime/AdminSyncPanel';
@@ -264,7 +264,7 @@ export default function Profile() {
   useEffect(() => {
     (async () => {
       try {
-        const me = await getMe();
+        const me = await base44.auth.me();
         setUser(me);
         if (me?.theme) setActiveThemeId(me.theme);
       } catch {}
@@ -317,7 +317,9 @@ export default function Profile() {
   const handleSave = async (form) => {
     setLocalProfile(form);
     const payload = { bio: form.bio, avatar_url: form.avatar_url, username: form.username, location: form.location, favorite_anime: form.favorite_anime, banner_url: form.banner_url };
-    await updateMe(payload);
+    try { await base44.auth.updateMe(payload); } catch {
+      try { await base44.entities.User.updateMe(payload); } catch {}
+    }
   };
 
   const bannerStyle = merged?.banner_url
@@ -503,7 +505,9 @@ export default function Profile() {
                   <div key={t.id} className="rk4-tc"
                     onClick={async () => {
                       setActiveThemeId(t.id);
-                      await updateMe({ theme: t.id });
+                      try { await base44.auth.updateMe({ theme: t.id }); } catch {
+                        try { await base44.entities.User.updateMe({ theme: t.id }); } catch {}
+                      }
                     }}
                     style={{ borderColor: activeThemeId===t.id?t.accent:'transparent', background: activeThemeId===t.id?t.accent+'10':'rgba(255,255,255,0.02)' }}>
                     <div style={{ height: 40, borderRadius: 9, marginBottom: 9, background: t.banner }} />

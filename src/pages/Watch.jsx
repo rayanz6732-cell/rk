@@ -5,7 +5,7 @@ import CommentsSection from '../components/anime/CommentsSection';
 import { recordWatchActivity } from '../lib/streakAndBadges';
 import { blockIframeAds } from '../lib/adBlocker';
 import { JikanAPI } from '../lib/jikan';
-// base44 removed — using Vercel API routes
+import { base44 } from '@/api/base44Client';
 
 export default function Watch() {
   const [searchParams] = useSearchParams();
@@ -34,7 +34,7 @@ export default function Watch() {
       // Fetch Jikan metadata and Aniwatch count in parallel
       const [firstPage, aniwatchRes] = await Promise.all([
         JikanAPI.getEpisodes(mal_id, 1),
-        fetch('/api/episodes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) }).then(r => r.json()).catch(() => null),
+        base44.functions.invoke('aniwatchProxy', { title }).catch(() => null),
       ]);
 
       let jikanEps = firstPage.data || [];
@@ -47,7 +47,7 @@ export default function Watch() {
       }
 
       // Aniwatch episodes (faster source — may have newer eps)
-      const aniwatchEps = aniwatchRes?.episodes || [];
+      const aniwatchEps = aniwatchRes?.data?.episodes || [];
       const aniwatchCount = aniwatchEps.length;
 
       // Build merged list: Jikan episodes enriched with aniwatch, plus any extras aniwatch has
@@ -118,15 +118,16 @@ export default function Watch() {
     setGogoSrc(null);
     setGogoError(null);
     setGogoLoading(true);
-    fetch('/api/stream', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mal_id, episode: ep, audio_type: audioType, anime_title: title }),
-    }).then(r => r.json()).then(res => {
-      if (res?.src) {
-        setGogoSrc(res.src);
+    base44.functions.invoke('animekaiStream', {
+      mal_id,
+      episode: ep,
+      audio_type: audioType,
+      anime_title: title,
+    }).then(res => {
+      if (res?.data?.src) {
+        setGogoSrc(res.data.src);
       } else {
-        setGogoError(res?.error || 'Episode not found on this server');
+        setGogoError(res?.data?.error || 'Episode not found on this server');
       }
     }).catch(() => {
       setGogoError('Failed to load from this server');
