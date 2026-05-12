@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+// AdminSyncPanel: sync functions moved to Vercel API routes
+// These buttons now call /api/sync-jikan and /api/sync-hianime
 import { RefreshCw, CheckCircle, AlertCircle, Loader2, Database, Tv } from 'lucide-react';
 
 function SyncResultStats({ summary, errors, total }) {
@@ -99,13 +100,13 @@ export default function AdminSyncPanel() {
         icon={Database}
         label="Jikan Sync (MAL)"
         description="Fetches currently airing & seasonal anime from MyAnimeList (Jikan API) and syncs episode counts into the database."
-        onSync={() => base44.functions.invoke('jikanSync', { action: 'sync' })}
+        onSync={() => fetch('/api/sync-jikan', { method: 'POST' }).then(r => r.json())}
       />
       <SyncPanel
         icon={Tv}
         label="HiAnime Sync (Episode Scraper)"
         description="Scrapes HiAnime.to for the latest episode counts on all ongoing anime in the database. More accurate for sub episode numbers."
-        onSync={() => base44.functions.invoke('hianimeSync', {})}
+        onSync={() => fetch('/api/sync-hianime', { method: 'POST' }).then(r => r.json())}
       />
     </div>
   );

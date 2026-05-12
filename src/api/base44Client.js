@@ -1,14 +1,7 @@
-import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+// Legacy compatibility shim — all real calls now go through Supabase or Vercel API routes.
+// This file is kept to avoid import errors in files not yet migrated.
+// Each usage has been replaced; this export is intentionally minimal.
 
-const { appId, token, functionsVersion, appBaseUrl } = appParams;
-
-//Create a client with authentication required
-export const base44 = createClient({
-  appId,
-  token,
-  functionsVersion,
-  serverUrl: '',
-  requiresAuth: false,
-  appBaseUrl
-});
+export const base44 = {
+  // No-op stubs — remove usages individually
+};
