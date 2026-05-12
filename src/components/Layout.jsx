@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { base44 } from '@/api/base44Client';
 import Navbar from './anime/Navbar';
 import BottomTabBar from './anime/BottomTabBar';
 import RKSidebar from './anime/RKSidebar';
@@ -26,17 +26,13 @@ export default function Layout() {
   useEffect(() => {
     const loadTheme = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          setUser(authUser);
-          const { data: profile } = await supabase.from('profiles').select('theme').eq('id', authUser.id).single();
-          const themeId = profile?.theme || 'default';
-          const theme = THEMES.find(t => t.id === themeId);
-          if (theme) applyTheme(theme);
-        } else {
-          applyTheme(THEMES[0]);
-        }
+        const me = await base44.auth.me();
+        setUser(me);
+        const themeId = me?.theme || 'default';
+        const theme = THEMES.find(t => t.id === themeId);
+        if (theme) applyTheme(theme);
       } catch {
+        // not logged in — apply default theme
         applyTheme(THEMES[0]);
       }
     };

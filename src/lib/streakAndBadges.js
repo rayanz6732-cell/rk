@@ -1,68 +1,70 @@
-import { supabase } from '@/lib/supabase';
+import { base44 } from '@/api/base44Client';
 
 export const BADGES = [
-  { id: 'first_watch',  name: 'First Watch',     icon: '🎬', desc: 'Watched your first episode' },
-  { id: 'ep_10',        name: 'Getting Started',  icon: '📺', desc: 'Watched 10 episodes' },
-  { id: 'ep_50',        name: 'Binge Watcher',    icon: '🍿', desc: 'Watched 50 episodes' },
-  { id: 'ep_100',       name: 'Anime Addict',     icon: '🔥', desc: 'Watched 100 episodes' },
-  { id: 'ep_500',       name: 'Veteran',          icon: '⚔️', desc: 'Watched 500 episodes' },
-  { id: 'streak_3',     name: '3-Day Streak',     icon: '📅', desc: '3 days in a row' },
-  { id: 'streak_7',     name: 'Week Warrior',     icon: '🗓️', desc: '7 days in a row' },
-  { id: 'streak_30',    name: 'Monthly Master',   icon: '🏆', desc: '30 days in a row' },
-  { id: 'night_owl',    name: 'Night Owl',        icon: '🦉', desc: 'Watched after midnight' },
+  { id: 'first_watch', label: 'First Watch', emoji: '🎬', desc: 'Watched your first episode' },
+  { id: 'ep_10', label: 'Getting Started', emoji: '📺', desc: 'Watched 10 episodes' },
+  { id: 'ep_50', label: 'Binge Watcher', emoji: '🍿', desc: 'Watched 50 episodes' },
+  { id: 'ep_100', label: 'Anime Addict', emoji: '🔥', desc: 'Watched 100 episodes' },
+  { id: 'ep_500', label: 'Veteran', emoji: '⚔️', desc: 'Watched 500 episodes' },
+  { id: 'streak_3', label: '3-Day Streak', emoji: '📅', desc: '3 days in a row' },
+  { id: 'streak_7', label: 'Week Warrior', emoji: '🗓️', desc: '7 days in a row' },
+  { id: 'streak_30', label: 'Monthly Master', emoji: '🏆', desc: '30 days in a row' },
+  { id: 'night_owl', label: 'Night Owl', emoji: '🦉', desc: 'Watched after midnight' },
 ];
 
 function getBadgesToAward(totalEps, streak, isNightOwl, existingBadges = []) {
   const earned = new Set(existingBadges);
   const newBadges = [];
-  const check = (id) => { if (!earned.has(id)) { newBadges.push(id); earned.add(id); } };
 
-  if (totalEps >= 1)   check('first_watch');
-  if (totalEps >= 10)  check('ep_10');
-  if (totalEps >= 50)  check('ep_50');
+  const check = (id) => {
+    if (!earned.has(id)) { newBadges.push(id); earned.add(id); }
+  };
+
+  if (totalEps >= 1) check('first_watch');
+  if (totalEps >= 10) check('ep_10');
+  if (totalEps >= 50) check('ep_50');
   if (totalEps >= 100) check('ep_100');
   if (totalEps >= 500) check('ep_500');
-  if (streak >= 3)     check('streak_3');
-  if (streak >= 7)     check('streak_7');
-  if (streak >= 30)    check('streak_30');
-  if (isNightOwl)      check('night_owl');
+  if (streak >= 3) check('streak_3');
+  if (streak >= 7) check('streak_7');
+  if (streak >= 30) check('streak_30');
+  if (isNightOwl) check('night_owl');
 
   return { allBadges: [...earned], newBadges };
 }
 
 export async function recordWatchActivity() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await base44.auth.me();
   if (!user) return;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return;
-
   const today = new Date().toISOString().split('T')[0];
-  const isNightOwl = new Date().getHours() < 5;
-  let streak = profile.watch_streak || 0;
+  const lastDate = user.last_watched_date;
+  const isNightOwl = new Date().getHours() >= 0 && new Date().getHours() < 5;
 
-  if (profile.last_watched_date && profile.last_watched_date !== today) {
+  let streak = user.watch_streak || 0;
+
+  if (lastDate === today) {
+    // Already watched today, just increment episodes
+  } else if (lastDate) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    streak = profile.last_watched_date === yesterday.toISOString().split('T')[0] ? streak + 1 : 1;
-  } else if (!profile.last_watched_date) {
+    const yStr = yesterday.toISOString().split('T')[0];
+    streak = lastDate === yStr ? streak + 1 : 1;
+  } else {
     streak = 1;
   }
 
-  const totalEps = (profile.total_episodes_watched || 0) + 1;
-  const totalMinutes = (profile.total_watch_minutes || 0) + 24;
-  const { allBadges } = getBadgesToAward(totalEps, streak, isNightOwl, profile.badges || []);
+  const totalEps = (user.total_episodes_watched || 0) + 1;
+  const { allBadges } = getBadgesToAward(totalEps, streak, isNightOwl, user.badges || []);
 
-  await supabase.from('profiles').update({
+  // Add ~24 minutes of watch time per episode
+  const totalMinutes = (user.total_watch_minutes || 0) + 24;
+
+  await base44.auth.updateMe({
     watch_streak: streak,
     last_watched_date: today,
     total_episodes_watched: totalEps,
     total_watch_minutes: totalMinutes,
     badges: allBadges,
-  }).eq('id', user.id);
+  });
 }
