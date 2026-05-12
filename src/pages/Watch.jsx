@@ -16,7 +16,7 @@ export default function Watch() {
   const storageKey = `rk_progress_${mal_id}_ep${ep}`;
 
   const [audioType, setAudioType] = useState('sub');
-  const [server, setServer] = useState('vidsrc');
+  const [server, setServer] = useState('animex');
   const [resumeTime, setResumeTime] = useState(0);
   const [episodes, setEpisodes] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +92,7 @@ export default function Watch() {
     };
   }, [storageKey, resumeTime]);
 
-  // Fetch gogoanime src when S3 is selected
+  // Fetch gogoanime src when S4 is selected
   useEffect(() => {
     if (server !== 'gogo') return;
     setGogoSrc(null);
@@ -114,10 +114,14 @@ export default function Watch() {
     }).finally(() => setGogoLoading(false));
   }, [server, mal_id, ep, audioType]);
 
+  const animexUrl = `https://animex.one/watch/anime-${mal_id}-episode-${ep}`;
+
   const embedUrl = server === 'vidsrc'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : server === '2embed'
     ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
+    : server === 'animex'
+    ? animexUrl
     : gogoSrc || null;
 
   const currentEpNum = parseInt(ep);
@@ -141,12 +145,21 @@ export default function Watch() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
             <button
+              onClick={() => setServer('animex')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                server === 'animex' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              title="AnimEx"
+            >
+              S1
+            </button>
+            <button
               onClick={() => setServer('vidsrc')}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 server === 'vidsrc' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              S1
+              S2
             </button>
             <button
               onClick={() => setServer('2embed')}
@@ -154,7 +167,7 @@ export default function Watch() {
                 server === '2embed' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              S2
+              S3
             </button>
             <button
               onClick={() => setServer('gogo')}
@@ -162,7 +175,7 @@ export default function Watch() {
                 server === 'gogo' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              S3
+              S4
             </button>
           </div>
           <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-1 border border-zinc-800 flex-shrink-0">
@@ -195,14 +208,14 @@ export default function Watch() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-8 h-8 border-4 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
-                  <p className="text-zinc-500 text-sm">Loading from S3...</p>
+                  <p className="text-zinc-500 text-sm">Loading from S4...</p>
                 </div>
               </div>
             ) : server === 'gogo' && gogoError ? (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3 text-center px-6">
                   <p className="text-zinc-400 text-sm">{gogoError}</p>
-                  <p className="text-zinc-600 text-xs">Try S1 or S2 instead</p>
+                  <p className="text-zinc-600 text-xs">Try S1, S2 or S3 instead</p>
                 </div>
               </div>
             ) : embedUrl ? (
