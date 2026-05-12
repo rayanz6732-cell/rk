@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
-import { base44 } from '@/api/base44Client';
 import AnimeCard from '../components/anime/AnimeCard';
 import {
   ArrowLeft, Play, Star, Captions, Mic, Calendar, Tv,
@@ -72,44 +71,46 @@ export default function AnimeDetail() {
     staleTime: 1000 * 60 * 60,
   });
 
+  const [epPage, setEpPage] = useState(1);
+  const [allEpisodes, setAllEpisodes] = useState([]);
+  const [epTotalPages, setEpTotalPages] = useState(1);
+  const [loadingMoreEps, setLoadingMoreEps] = useState(false);
+
   const { data: episodesData, isLoading: episodesLoading } = useQuery({
-    queryKey: ['anime-episodes-merged', mal_id],
+    queryKey: ['anime-episodes-p1', mal_id],
     queryFn: async () => {
-      // Fetch Jikan (all pages) + Aniwatch in parallel
-      const [firstPage, aniwatchRes] = await Promise.all([
-        JikanAPI.getEpisodes(mal_id, 1),
-        base44.functions.invoke('aniwatchProxy', { title: anime?.title || '' }).catch(() => null),
-      ]);
-
-      let jikanEps = firstPage.data || [];
+      const firstPage = await JikanAPI.getEpisodes(mal_id, 1);
+      const eps = firstPage.data || [];
       const totalPages = firstPage.pagination?.last_visible_page || 1;
-      if (totalPages > 1) {
-        const rest = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, i) => JikanAPI.getEpisodes(mal_id, i + 2))
-        );
-        rest.forEach(r => { jikanEps = jikanEps.concat(r.data || []); });
-      }
-
-      // Merge Aniwatch extras (episodes Jikan hasn't listed yet)
-      const aniwatchEps = aniwatchRes?.data?.episodes || [];
-      const aniwatchCount = aniwatchEps.length;
-      const jikanNums = new Set(jikanEps.map(e => e.mal_id));
-      const extras = [];
-      for (let i = jikanEps.length + 1; i <= aniwatchCount; i++) {
-        if (!jikanNums.has(i)) {
-          const aw = aniwatchEps.find(e => e.number === i);
-          extras.push({ mal_id: i, title: aw?.title || `Episode ${i}`, filler: aw?.isFiller || false, fromAniwatch: true });
-        }
-      }
-      return [...jikanEps, ...extras];
+      setEpTotalPages(totalPages);
+      setAllEpisodes(eps);
+      return { eps, totalPages };
     },
-    enabled: !!mal_id && !!anime,
-    staleTime: 1000 * 30 * 60, // 30 min
+    enabled: !!mal_id,
+    staleTime: 1000 * 30 * 60,
   });
 
+  const loadMoreEpisodes = async () => {
+    if (loadingMoreEps || epPage >= epTotalPages) return;
+    setLoadingMoreEps(true);
+    const nextPage = epPage + 1;
+    try {
+      // Fetch remaining pages with a small delay to avoid rate limits
+      const remaining = [];
+      for (let p = nextPage; p <= epTotalPages; p++) {
+        await new Promise(r => setTimeout(r, 400));
+        const res = await JikanAPI.getEpisodes(mal_id, p);
+        remaining.push(...(res.data || []));
+      }
+      setAllEpisodes(prev => [...prev, ...remaining]);
+      setEpPage(epTotalPages);
+    } finally {
+      setLoadingMoreEps(false);
+    }
+  };
+
   const seasonEntries = relations || [];
-  const episodes = episodesData || [];
-  const hasNextEpPage = false; // all pages fetched at once now
+  const episodes = allEpisodes;
 
   if (isLoading) {
     return (
@@ -354,6 +355,24 @@ export default function AnimeDetail() {
                 ))}
               </div>
 
+              {epPage < epTotalPages && (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={loadMoreEpisodes}
+                    disabled={loadingMoreEps}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-zinc-900 border border-zinc-700 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-semibold rounded-xl transition-all disabled:opacity-50"
+                  >
+                    {loadingMoreEps ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-zinc-600 border-t-emerald-500 rounded-full animate-spin" />
+                        Loading all {epTotalPages * 100}+ episodes...
+                      </>
+                    ) : (
+                      `Load All Episodes (${epTotalPages} pages)`
+                    )}
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <p className="text-zinc-600 text-sm">No episodes found.</p>

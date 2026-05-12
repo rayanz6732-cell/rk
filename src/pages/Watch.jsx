@@ -31,41 +31,21 @@ export default function Watch() {
     if (!mal_id) return;
     setRefreshing(true);
     try {
-      // Fetch Jikan metadata and Aniwatch count in parallel
-      const [firstPage, aniwatchRes] = await Promise.all([
-        JikanAPI.getEpisodes(mal_id, 1),
-        base44.functions.invoke('aniwatchProxy', { title }).catch(() => null),
-      ]);
-
+      const firstPage = await JikanAPI.getEpisodes(mal_id, 1);
       let jikanEps = firstPage.data || [];
       const totalPages = firstPage.pagination?.last_visible_page || 1;
-      if (totalPages > 1) {
-        const rest = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, i) => JikanAPI.getEpisodes(mal_id, i + 2))
-        );
-        rest.forEach(r => { jikanEps = jikanEps.concat(r.data || []); });
-      }
 
-      // Aniwatch episodes (faster source — may have newer eps)
-      const aniwatchEps = aniwatchRes?.data?.episodes || [];
-      const aniwatchCount = aniwatchEps.length;
-
-      // Build merged list: Jikan episodes enriched with aniwatch, plus any extras aniwatch has
-      const jikanNums = new Set(jikanEps.map(e => e.mal_id));
-      const extras = [];
-      for (let i = jikanEps.length + 1; i <= aniwatchCount; i++) {
-        if (!jikanNums.has(i)) {
-          const aw = aniwatchEps.find(e => e.number === i);
-          extras.push({
-            mal_id: i,
-            title: aw?.title || `Episode ${i}`,
-            isFiller: aw?.isFiller || false,
-            fromAniwatch: true,
-          });
+      // For large series, only fetch first 2 pages initially (to avoid rate limits)
+      const pagesToFetch = Math.min(totalPages, 2);
+      if (pagesToFetch > 1) {
+        for (let p = 2; p <= pagesToFetch; p++) {
+          await new Promise(r => setTimeout(r, 400));
+          const res = await JikanAPI.getEpisodes(mal_id, p);
+          jikanEps = jikanEps.concat(res.data || []);
         }
       }
 
-      setEpisodes([...jikanEps, ...extras]);
+      setEpisodes(jikanEps);
     } catch (err) {
       console.error('Failed to fetch episodes:', err);
     } finally {
