@@ -114,16 +114,14 @@ export default function Watch() {
     }).finally(() => setGogoLoading(false));
   }, [server, mal_id, ep, audioType]);
 
-  // S1: vidsrc.me — reliable MAL-based embed
-  // S2: 2embed.skin — another reliable embed
-  // S3: vidsrc.pro — additional fallback
-  // S4: gogo (backend, may be unavailable)
-  const embedUrl = server === 'animex'
-    ? `https://vidsrc.me/embed/anime?mal=${mal_id}&episode=${ep}`
-    : server === 'vidsrc'
-    ? `https://2embed.skin/embed/mal/${mal_id}/${ep}`
+  const animexUrl = `https://animex.one/watch/anime-${mal_id}-episode-${ep}`;
+
+  const embedUrl = server === 'vidsrc'
+    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
     : server === '2embed'
-    ? `https://vidsrc.pro/embed/anime/${mal_id}/${ep}`
+    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
+    : server === 'animex'
+    ? animexUrl
     : gogoSrc || null;
 
   const currentEpNum = parseInt(ep);
@@ -151,7 +149,7 @@ export default function Watch() {
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 server === 'animex' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-zinc-300'
               }`}
-              title="VidSrc.me"
+              title="AnimEx"
             >
               S1
             </button>
@@ -217,7 +215,7 @@ export default function Watch() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3 text-center px-6">
                   <p className="text-zinc-400 text-sm">{gogoError}</p>
-                  <p className="text-zinc-600 text-xs">Try S1, S2, or S3 instead</p>
+                  <p className="text-zinc-600 text-xs">Try S1, S2 or S3 instead</p>
                 </div>
               </div>
             ) : embedUrl ? (
