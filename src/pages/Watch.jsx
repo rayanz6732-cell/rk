@@ -116,12 +116,12 @@ export default function Watch() {
 
   const animexUrl = `https://animex.one/watch/anime-${mal_id}-episode-${ep}`;
 
-  const embedUrl = server === 'vidsrc'
-    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?ads=false`
-    : server === '2embed'
-    ? `https://vidsrc.cc/v2/embed/anime/${mal_id}/${ep}/${audioType}?source=2&ads=false`
-    : server === 'animex'
+  const embedUrl = server === 'animex'
     ? animexUrl
+    : server === 'vidsrc'
+    ? `https://vidsrc.me/embed/anime?mal=${mal_id}&episode=${ep}&type=${audioType}`
+    : server === '2embed'
+    ? `https://vidsrc.to/embed/anime/${mal_id}/${ep}`
     : gogoSrc || null;
 
   const currentEpNum = parseInt(ep);
