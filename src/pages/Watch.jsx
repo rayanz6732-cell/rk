@@ -114,14 +114,16 @@ export default function Watch() {
     }).finally(() => setGogoLoading(false));
   }, [server, mal_id, ep, audioType]);
 
-  const animexUrl = `https://animex.one/watch/anime-${mal_id}-episode-${ep}`;
-
+  // S1: animeplay.cfd — MAL-based iframe (megaplay backend, very reliable)
+  // S2: vidsrc.me — MAL-based, different source
+  // S3: vidsrc.su — another mirror
+  // S4: gogo scraper (backend)
   const embedUrl = server === 'animex'
-    ? animexUrl
+    ? `https://animeplay.cfd/stream/mal/${mal_id}/${ep}/${audioType}`
     : server === 'vidsrc'
     ? `https://vidsrc.me/embed/anime?mal=${mal_id}&episode=${ep}&type=${audioType}`
     : server === '2embed'
-    ? `https://vidsrc.to/embed/anime/${mal_id}/${ep}`
+    ? `https://vidsrc.su/embed/anime?mal=${mal_id}&episode=${ep}`
     : gogoSrc || null;
 
   const currentEpNum = parseInt(ep);
