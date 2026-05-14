@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
@@ -90,6 +90,19 @@ export default function AnimeDetail() {
     staleTime: 1000 * 30 * 60,
   });
 
+  // Fallback: if Jikan returned no episodes but the anime has a known count, generate synthetic episode list
+  const episodeCount = anime?.episodes || 0;
+  const syntheticEpisodes = useMemo(() => {
+    if (allEpisodes.length > 0 || episodesLoading || episodeCount <= 0) return [];
+    return Array.from({ length: episodeCount }, (_, i) => ({
+      mal_id: i + 1,
+      title: null,
+      filler: false,
+      recap: false,
+      images: null,
+    }));
+  }, [allEpisodes.length, episodesLoading, episodeCount]);
+
   const loadMoreEpisodes = async () => {
     if (loadingMoreEps || epPage >= epTotalPages) return;
     setLoadingMoreEps(true);
@@ -110,7 +123,7 @@ export default function AnimeDetail() {
   };
 
   const seasonEntries = relations || [];
-  const episodes = allEpisodes;
+  const episodes = allEpisodes.length > 0 ? allEpisodes : syntheticEpisodes;
 
   if (isLoading) {
     return (
@@ -310,6 +323,16 @@ export default function AnimeDetail() {
             <div className="flex items-center gap-3 py-6">
               <div className="w-5 h-5 border-2 border-zinc-700 border-t-emerald-500 rounded-full animate-spin" />
               <p className="text-zinc-500 text-sm">Loading episodes...</p>
+            </div>
+          ) : episodes.length === 0 && !episodesLoading ? (
+            <div className="flex flex-col items-start gap-3 py-4">
+              <p className="text-zinc-500 text-sm">No episode list available for this title.</p>
+              <Link
+                to={`/Watch?id=${mal_id}&ep=1&title=${encodeURIComponent(anime?.title || '')}`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold rounded-xl transition-colors"
+              >
+                <Play className="w-4 h-4 fill-black" /> Watch Episode 1
+              </Link>
             </div>
           ) : episodes.length > 0 ? (
             <>
