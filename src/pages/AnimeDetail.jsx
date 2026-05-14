@@ -76,7 +76,14 @@ export default function AnimeDetail() {
   const [epTotalPages, setEpTotalPages] = useState(1);
   const [loadingMoreEps, setLoadingMoreEps] = useState(false);
 
-  const { data: episodesData, isLoading: episodesLoading } = useQuery({
+  // Reset episode state when anime changes
+  useEffect(() => {
+    setAllEpisodes([]);
+    setEpPage(1);
+    setEpTotalPages(1);
+  }, [mal_id]);
+
+  const { isLoading: episodesLoading } = useQuery({
     queryKey: ['anime-episodes-p1', mal_id],
     queryFn: async () => {
       const firstPage = await JikanAPI.getEpisodes(mal_id, 1);
@@ -87,7 +94,7 @@ export default function AnimeDetail() {
       return { eps, totalPages };
     },
     enabled: !!mal_id,
-    staleTime: 1000 * 30 * 60,
+    staleTime: 0,
   });
 
   // Fallback: if Jikan returned no episodes but the anime has a known count, generate synthetic episode list
