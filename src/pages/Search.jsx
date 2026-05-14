@@ -20,12 +20,14 @@ export default function Search() {
   const urlQuery = searchParams.get('q') || '';
   const filter = searchParams.get('filter') || '';
 
+  const urlGenre = searchParams.get('genre') || '';
+
   const [searchText, setSearchText] = useState(urlQuery);
   const [submittedQuery, setSubmittedQuery] = useState(urlQuery);
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState(urlGenre);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedType, setSelectedType] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(!!urlGenre);
   const [page, setPage] = useState(1);
 
   const isTrending = filter === 'trending' && !submittedQuery && !selectedGenre;

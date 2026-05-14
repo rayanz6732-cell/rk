@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { JikanAPI } from '../lib/jikan';
 import TrendingSidebar from '../components/anime/TrendingSidebar';
 import SignupSection from '../components/anime/SignupSection.jsx';
@@ -14,7 +14,7 @@ if (!document.head.querySelector('link[href*="Plus+Jakarta"]')) {
   document.head.appendChild(l);
 }
 
-const GENRES = ['All', 'Action', 'Romance', 'Fantasy', 'Thriller', 'Sci-Fi', 'Slice of Life', 'Horror', 'Sports', 'Mecha', 'Mystery', 'Comedy'];
+const GENRES = ['Action', 'Romance', 'Fantasy', 'Thriller', 'Sci-Fi', 'Slice of Life', 'Horror', 'Sports', 'Mecha', 'Mystery', 'Comedy', 'Isekai', 'Shounen'];
 
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
 function HeroBanner({ featured }) {
@@ -195,21 +195,23 @@ function SearchBar() {
 }
 
 // ─── Genre Filter Chips ───────────────────────────────────────────────────────
-function GenreChips({ active, onChange }) {
+function GenreChips() {
+  const navigate = useNavigate();
   return (
     <div className="hk-genres" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 28px 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
       {GENRES.map(g => (
-        <button key={g} onClick={() => onChange(g)}
+        <button key={g} onClick={() => navigate(`/Search?genre=${encodeURIComponent(g)}`)}
           style={{
             flexShrink: 0, padding: '6px 16px', borderRadius: 20,
             fontSize: 12, fontWeight: 700, cursor: 'pointer',
             fontFamily: 'Plus Jakarta Sans, sans-serif',
-            border: active === g ? 'none' : '1px solid rgba(255,255,255,0.08)',
-            background: active === g ? 'linear-gradient(135deg,#f472b6,#a855f7)' : 'rgba(255,255,255,0.03)',
-            color: active === g ? '#000' : '#475569',
-            boxShadow: active === g ? '0 2px 14px rgba(244,114,182,0.35)' : 'none',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.03)',
+            color: '#475569',
             transition: 'all 0.2s',
-          }}>
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#f472b6,#a855f7)'; e.currentTarget.style.color = '#000'; e.currentTarget.style.border = 'none'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#475569'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'; }}>
           {g}
         </button>
       ))}
@@ -364,8 +366,6 @@ function SectionRow({ title, icon: Icon, anime = [], viewAllLink, accent = '#f47
 // ─── Main Home ────────────────────────────────────────────────────────────────
 export default function Home() {
   const [continueWatching, setContinueWatching] = useState([]);
-  const [activeGenre, setActiveGenre] = useState('All');
-
   // Restore continue watching from localStorage (unchanged logic)
   useEffect(() => {
     const allKeys = Object.keys(localStorage).filter(k => k.startsWith('rk_progress_'));
@@ -421,12 +421,6 @@ export default function Home() {
   const popular       = mostPopular?.data || [];
   const upcomingList  = upcoming || [];
 
-  // Genre filter helper
-  const filterByGenre = (list) => {
-    if (activeGenre === 'All') return list;
-    return list.filter(a => (a.genres || []).some(g => (g.name || g) === activeGenre));
-  };
-
   return (
     <>
       <style>{`
@@ -468,7 +462,7 @@ export default function Home() {
         <SearchBar />
 
         {/* ── Genre chips ── */}
-        <GenreChips active={activeGenre} onChange={setActiveGenre} />
+        <GenreChips />
 
         {/* ── Signup nudge ── */}
         <div className="hk-signup" style={{ padding: '24px 28px 0' }}>
@@ -495,21 +489,21 @@ export default function Home() {
             <SectionRow
               title="Currently Airing This Season"
               icon={Flame}
-              anime={filterByGenre(latestUpdates.slice(0, 12))}
+              anime={latestUpdates.slice(0, 12)}
               viewAllLink="/Search?filter=season"
               accent="#f472b6"
             />
             <SectionRow
               title="Top Rated Right Now"
               icon={Star}
-              anime={filterByGenre(trending.slice(0, 12))}
+              anime={trending.slice(0, 12)}
               viewAllLink="/Search?filter=top"
               accent="#fbbf24"
             />
             <SectionRow
               title="Most Popular"
               icon={TrendingUp}
-              anime={filterByGenre(popular.slice(0, 12))}
+              anime={popular.slice(0, 12)}
               viewAllLink="/Search?filter=popular"
               accent="#a855f7"
             />
@@ -517,7 +511,7 @@ export default function Home() {
               <SectionRow
                 title="Coming Soon"
                 icon={Calendar}
-                anime={filterByGenre(upcomingList.slice(0, 12))}
+                anime={upcomingList.slice(0, 12)}
                 accent="#34d399"
               />
             )}
